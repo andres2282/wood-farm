@@ -105,7 +105,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.7.0/ethers.umd.min.js"></script>
 <script type="module">
   import { MiniKit } from 'https://cdn.jsdelivr.net/npm/@worldcoin/minikit-js/+esm';
-  MiniKit.install('app_345890bba13f14519b84931b80bf9ac8');
+  MiniKit.install('app_f29c6b547f55d9e0a06d39b08d3c30d2');
   window._MiniKit = MiniKit;
   console.log('MiniKit listo:', MiniKit.isInstalled());
 </script>
@@ -139,9 +139,9 @@
     </div>
 
     <div style="background:linear-gradient(135deg,#1a3a0e,#0d2606);border:2px solid #6aa84f;border-radius:18px;padding:18px;margin-bottom:14px;text-align:left;font-size:14px;line-height:1.7;color:#f5e6c8;">
-      <div style="font-family:'Rye',cursive;color:#6aa84f;font-size:17px;margin-bottom:10px;text-align:center;">💎 La Madera vale BRZL</div>
-      Cada <b style="color:#ffd700;">1,000 madera</b> = <b style="color:#ffd700;">1 BRZL</b><br>
-      Junta <b style="color:#ffd700;">10,000 BRZL</b> y podrás <b>retirarlos a tu wallet</b> real en World Chain. ¡Cuanto más subas de nivel, más rápido los consigues!
+      <div style="font-family:'Rye',cursive;color:#6aa84f;font-size:17px;margin-bottom:10px;text-align:center;">💎 Gana BRZL</div>
+      Cambia tu madera por <b style="color:#ffd700;">BRZL</b> cuando quieras desde la sección Retirar.<br>
+      Junta suficiente y podrás <b>retirarlos a tu wallet</b> real en World Chain. ¡Cuanto más subas de nivel, más rápido creces!
     </div>
 
     <div style="background:linear-gradient(135deg,#3a1a0e,#2a0f07);border:2px solid #b87333;border-radius:18px;padding:16px;margin-bottom:18px;text-align:left;font-size:13px;line-height:1.6;color:#f5e6c8;">
@@ -163,6 +163,9 @@
       <div class="resource-chip"><span class="icon">🪵</span><span class="val" id="wood-count">0</span></div>
       <div class="resource-chip"><span class="icon" id="brzl-icon-slot"></span><span class="val" id="brzl-count">0</span></div>
       <div class="resource-chip lvl-chip"><span class="icon">⭐</span><span class="val" id="level-count">1</span></div>
+    </div>
+    <div class="resource-row" style="margin-top:6px;">
+      <div class="resource-chip" style="border-color:var(--green-light);background:rgba(74,124,58,0.2);"><span class="icon">👛</span><span style="font-size:11px;color:var(--gold-light);">Wallet:</span><span class="val" id="wallet-brzl-header">--</span><span style="font-size:11px;">BRZL</span></div>
     </div>
   </div>
   <div class="page active" id="page-home">
@@ -225,6 +228,23 @@
       <div style="text-align:center;margin-top:8px;font-size:12px;color:var(--gold-light);" id="wd-status">Sigue talando para acumular BRZL</div>
     </div>
 
+    <div class="card" style="border-color:var(--gold-bright);">
+      <div class="card-icon">🔄</div>
+      <div class="card-info">
+        <div class="card-name">Cambiar Madera por BRZL</div>
+        <div class="card-desc">1,000 madera = 1 BRZL. Tenés <span id="conv-wood">0</span> 🪵</div>
+      </div>
+      <button class="card-btn" onclick="convertWoodToBRZL()">CAMBIAR</button>
+    </div>
+
+    <div class="card" style="border-color:var(--green-light);margin-bottom:14px;">
+      <div class="card-icon">👛</div>
+      <div class="card-info">
+        <div class="card-name">BRZL en tu Wallet</div>
+        <div class="card-desc"><span id="wallet-brzl">0</span> BRZL reales en World Chain</div>
+      </div>
+    </div>
+
     <button class="btn-play" id="btn-withdraw" style="width:100%;font-size:18px;margin-bottom:12px;opacity:0.5;" onclick="doWithdraw()" disabled>🔒 RETIRAR (10,000 BRZL)</button>
 
     <div class="card" style="border-color:var(--green-light);">
@@ -275,7 +295,9 @@ let useMiniKit = false;
 
 // Conectar wallet de World App
 async function connectWallet() {
-  const mk = window._MiniKit || window.MiniKit;
+  // Esperar a que MiniKit cargue (hasta 5 seg)
+  let mk = window._MiniKit || window.MiniKit;
+  for(let i=0;i<10 && !mk;i++){await new Promise(r=>setTimeout(r,500));mk=window._MiniKit||window.MiniKit;}
   if (mk && mk.isInstalled && mk.isInstalled()) {
     try {
       const chars='ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
@@ -285,7 +307,12 @@ async function connectWallet() {
       playerWallet = payload.address || mk.walletAddress;
       useMiniKit = true;
       console.log('Wallet conectada:', playerWallet);
+      await loadWalletBalance();
     } catch(e) { console.log('walletAuth error:', e.message); }
+  } else {
+    console.log('MiniKit no disponible (navegador normal)');
+    const elH=document.getElementById('wallet-brzl-header');
+    if(elH)elH.textContent='0';
   }
 }
 
@@ -318,6 +345,8 @@ async function doWithdraw() {
 
 // Actualizar pagina de retiro
 function updateWithdrawPage() {
+  const cw=document.getElementById('conv-wood');if(cw)cw.textContent=fmt(game.wood);
+  if(playerWallet)loadWalletBalance();
   const wdBrzl = document.getElementById('wd-brzl');
   const wdProg = document.getElementById('wd-progress');
   const wdStatus = document.getElementById('wd-status');
@@ -340,7 +369,7 @@ function updateWithdrawPage() {
 }
 
 const BRZL_ICON = `<img src="data:image/jpeg;base64,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" style="width:16px;height:16px;border-radius:50%;vertical-align:middle;">`;
-let game={wood:0,brzl:0,level:1,xp:0,totalWood:0,lastSave:Date.now(),machines:{},inventory:{},dailyStreak:0,lastDaily:0,missionsClaimed:{},lastChest:0,prestige:0,prestigePoints:0};
+let game={wood:0,brzl:0,level:1,xp:0,totalWood:0,energy:100,maxEnergy:100,lastEnergyTime:Date.now(),lastSave:Date.now(),machines:{},inventory:{},dailyStreak:0,lastDaily:0,missionsClaimed:{},lastChest:0,prestige:0,prestigePoints:0};
 const MACHINES=[
   {id:'axe',icon:'🪓',name:'Hacha Mejorada',desc:'+madera por tap',baseCost:50,costMult:1.5,prodTap:1,prodSec:0},
   {id:'saw',icon:'🪚',name:'Sierra Eléctrica',desc:'Tala automática',baseCost:200,costMult:1.6,prodTap:0,prodSec:1},
@@ -349,6 +378,9 @@ const MACHINES=[
   {id:'mill',icon:'🏭',name:'Aserradero',desc:'Producción industrial',baseCost:25000,costMult:2.0,prodTap:0,prodSec:120}
 ];
 const SHOP_ITEMS=[
+  {id:'energy50',icon:'⚡',name:'Recarga +50 Energía',desc:'Recupera 50 de energía al instante',cost:2,type:'energy',energyAmount:50},
+  {id:'energyfull',icon:'🔋',name:'Energía Completa',desc:'Llena tu energía al máximo',cost:5,type:'energy',energyAmount:9999},
+  {id:'maxenergy',icon:'💪',name:'+50 Energía Máxima',desc:'Aumenta tu energía máxima permanente',cost:30,type:'maxenergy',energyAmount:50},
   {id:'boost2x',icon:'⚡',name:'Boost x2 (1h)',desc:'Duplica producción 1 hora',cost:5,type:'boost'},
   {id:'boost5x',icon:'🔥',name:'Boost x5 (1h)',desc:'Quintuplica producción 1h',cost:15,type:'boost'},
   {id:'instant',icon:'💨',name:'Cosecha Instantánea',desc:'8 horas de producción ya',cost:20,type:'instant'},
@@ -360,7 +392,7 @@ function machineCost(m){const l=game.machines[m.id]||0;return Math.floor(m.baseC
 function totalPerSec(){let s=0;MACHINES.forEach(m=>{s+=m.prodSec*(game.machines[m.id]||0);});if(game.inventory['autobot'])s+=100*game.inventory['autobot'];return s;}
 function totalPerTap(){let t=1;MACHINES.forEach(m=>{t+=m.prodTap*(game.machines[m.id]||0);});if(game.inventory['goldenaxe'])t=Math.floor(t*1.5);return t;}
 function save(){game.lastSave=Date.now();try{localStorage.setItem('woodfarm_save',JSON.stringify(game));}catch(e){}}
-function load(){try{const s=localStorage.getItem('woodfarm_save');if(s){game=Object.assign(game,JSON.parse(s));return true;}}catch(e){}return false;}
+function load(){try{const v=localStorage.getItem('woodfarm_version');if(v!=='2'){localStorage.removeItem('woodfarm_save');localStorage.setItem('woodfarm_version','2');return false;}const s=localStorage.getItem('woodfarm_save');if(s){game=Object.assign(game,JSON.parse(s));return true;}}catch(e){}return false;}
 let offlineEarned=0;
 function showIntro(){
   document.getElementById('splash').style.display='none';
@@ -375,13 +407,18 @@ function startGame(){
   document.getElementById('app').style.display='block';
   const had=load();
   if(had&&game.lastSave){const secs=Math.min((Date.now()-game.lastSave)/1000,8*3600);offlineEarned=Math.floor(totalPerSec()*secs);if(offlineEarned>0){document.getElementById('offline-amount').textContent='+'+fmt(offlineEarned)+' 🪵';document.getElementById('offline-modal').classList.add('show');}}
-  const slot=document.getElementById('brzl-icon-slot');if(slot)slot.innerHTML=BRZL_ICON;connectWallet();renderAll();startGameLoop();
+  const slot=document.getElementById('brzl-icon-slot');if(slot)slot.innerHTML=BRZL_ICON;connectWallet().then(()=>loadWalletBalance());updateEnergyBar();renderAll();startGameLoop();
 }
 function claimOffline(){game.wood+=offlineEarned;game.totalWood+=offlineEarned;offlineEarned=0;document.getElementById('offline-modal').classList.remove('show');renderAll();save();}
 function fmt(n){n=Math.floor(n);if(n>=1e9)return(n/1e9).toFixed(2)+'B';if(n>=1e6)return(n/1e6).toFixed(2)+'M';if(n>=1e3)return(n/1e3).toFixed(2)+'K';return n.toString();}
 let treeHP=100;
 let comboCount=0, comboTimer=null, comboMult=1;
 function chopTree(e){
+  // Verificar energia
+  if(game.energy<=0){showToast('⚡ Sin energía! Espera o compra más');return;}
+  game.energy--;
+  game.lastEnergyTime=Date.now();
+  updateEnergyBar();
   // Sistema de combo: tocar rapido sube el multiplicador
   comboCount++;
   clearTimeout(comboTimer);
@@ -409,9 +446,13 @@ function updateComboDisplay(){
 function randomTree(){const t=['🌲','🌳','🌴','🪾'];return t[Math.floor(Math.random()*t.length)];}
 function showWoodPop(text,e){const pop=document.createElement('div');pop.className='wood-pop';pop.textContent=text;const scene=document.getElementById('forest-scene');const rect=scene.getBoundingClientRect();let x=rect.width/2,y=rect.height/2;if(e&&e.clientX){x=e.clientX-rect.left;y=e.clientY-rect.top;}pop.style.left=x+'px';pop.style.top=y+'px';scene.appendChild(pop);setTimeout(()=>pop.remove(),900);}
 function addXP(a){game.xp+=a;const need=xpForLevel(game.level);if(game.xp>=need){game.xp-=need;game.level++;game.brzl+=1;showToast('🎉 ¡Nivel '+game.level+'! +1 BRZL');}}
-function startGameLoop(){setInterval(()=>{const ps=totalPerSec();if(ps>0){game.wood+=ps;game.totalWood+=ps;updateResources();}},1000);setInterval(save,5000);setInterval(updateResources,500);setInterval(convertWoodToBRZL,2000);}
-function convertWoodToBRZL(){if(game.wood>=1000){const converted=Math.floor(game.wood/1000);game.wood-=converted*1000;game.brzl+=converted;updateResources();updateWithdrawPage();}}
+function startGameLoop(){setInterval(()=>{const ps=totalPerSec();if(ps>0){game.wood+=ps;game.totalWood+=ps;updateResources();}},1000);setInterval(save,5000);setInterval(updateResources,500);setInterval(regenEnergy,1000);}
+// Regenerar energia: 1 cada 30 segundos
+function regenEnergy(){if(game.energy<game.maxEnergy){const now=Date.now();const elapsed=(now-game.lastEnergyTime)/1000;const regen=Math.floor(elapsed/30);if(regen>0){game.energy=Math.min(game.maxEnergy,game.energy+regen);game.lastEnergyTime=now;updateResources();updateEnergyBar();}}}
+// Convertir madera a BRZL manualmente
+function convertWoodToBRZL(){if(game.wood<1000){showToast('Necesitas al menos 1000 madera');return;}const converted=Math.floor(game.wood/1000);game.wood-=converted*1000;game.brzl+=converted;showToast('Cambiaste '+fmt(converted*1000)+' madera por '+fmt(converted)+' BRZL!');spawnCoinsEffect();updateResources();updateWithdrawPage();save();}
 function updateResources(){
+  updateEnergyBar();
   document.getElementById('wood-count').textContent=fmt(game.wood);
   document.getElementById('brzl-count').textContent=fmt(game.brzl);
   document.getElementById('level-count').textContent=game.level;
@@ -426,6 +467,50 @@ function updateResources(){
   document.getElementById('home-xp-max').textContent=fmt(need);
   document.getElementById('home-xp-fill').style.width=Math.min(100,(game.xp/need*100))+'%';
 }
+
+// Actualizar barra de energia
+function updateEnergyBar(){
+  const txt=document.getElementById('energy-text');
+  const fill=document.getElementById('energy-fill');
+  if(txt)txt.textContent=Math.floor(game.energy)+'/'+game.maxEnergy;
+  if(fill)fill.style.width=Math.min(100,(game.energy/game.maxEnergy*100))+'%';
+}
+
+// Efecto de monedas al convertir
+function spawnCoinsEffect(){
+  for(let i=0;i<8;i++){
+    setTimeout(()=>{
+      const c=document.createElement('div');
+      c.textContent='💎';c.style.cssText='position:fixed;font-size:28px;z-index:550;pointer-events:none;left:'+(40+Math.random()*20)+'vw;top:50vh;transition:all 1s ease-out;';
+      document.body.appendChild(c);
+      requestAnimationFrame(()=>{c.style.top=(20+Math.random()*20)+'vh';c.style.left=(20+Math.random()*60)+'vw';c.style.opacity='0';});
+      setTimeout(()=>c.remove(),1000);
+    },i*60);
+  }
+}
+
+// Leer balance REAL de BRZL en la wallet del jugador
+async function loadWalletBalance(){
+  if(!playerWallet)return;
+  try{
+    const rpc=new ethers.JsonRpcProvider(WORLD_RPC);
+    const erc20=['function balanceOf(address) view returns (uint256)'];
+    const brzl=new ethers.Contract(BRZL_ADDR,erc20,rpc);
+    const bal=await brzl.balanceOf(playerWallet);
+    window._walletBRZL=parseFloat(ethers.formatEther(bal));
+    const el=document.getElementById('wallet-brzl');
+    if(el)el.textContent=fmt(window._walletBRZL);
+    const elH=document.getElementById('wallet-brzl-header');
+    if(elH)elH.textContent=fmt(window._walletBRZL);
+    // Tambien leer datos del jugador en el contrato del juego
+    const vaultABI=['function getPlayer(address) view returns (uint256,uint256,uint256,bool,uint256)'];
+    const vault=new ethers.Contract(GAME_VAULT,vaultABI,rpc);
+    const pdata=await vault.getPlayer(playerWallet);
+    window._vaultGameBRZL=parseFloat(ethers.formatEther(pdata[0]));
+    console.log('Balance BRZL wallet:',window._walletBRZL,'| En vault:',window._vaultGameBRZL);
+  }catch(e){console.log('loadWalletBalance error:',e.message);}
+}
+
 function renderAll(){updateResources();renderMachines();renderInventory();renderRewards();renderShop();renderRanking();}
 function renderMachines(){const list=document.getElementById('machines-list');list.innerHTML='';MACHINES.forEach(m=>{const lvl=game.machines[m.id]||0,cost=machineCost(m),can=game.wood>=cost;const pt=m.prodSec>0?`+${m.prodSec}/seg`:`+${m.prodTap}/tap`;const c=document.createElement('div');c.className='card';c.innerHTML=`<div class="card-icon">${m.icon}</div><div class="card-info"><div class="card-name">${m.name}</div><div class="card-desc">${m.desc} (${pt})</div><div class="card-level">Nivel ${lvl}</div></div><button class="card-btn" ${can?'':'disabled'} onclick="buyMachine('${m.id}')">🪵 ${fmt(cost)}</button>`;list.appendChild(c);});}
 function buyMachine(id){const m=MACHINES.find(x=>x.id===id),cost=machineCost(m);if(game.wood<cost){showToast('🪵 Madera insuficiente');return;}game.wood-=cost;game.machines[id]=(game.machines[id]||0)+1;addXP(5);showToast('✅ '+m.name+' mejorada!');renderMachines();updateResources();save();}
@@ -459,7 +544,13 @@ async function buyShopItem(id){
     game.brzl-=s.cost;
   }
   // Aplicar el efecto del boost
-  if(s.type==='instant'){const b=totalPerSec()*8*3600;game.wood+=b;game.totalWood+=b;showToast('💨 +'+fmt(b)+' 🪵!');}
+  if(s.type==='energy'){
+    if(s.energyAmount>=9999){game.energy=game.maxEnergy;}
+    else{game.energy=Math.min(game.maxEnergy,game.energy+s.energyAmount);}
+    updateEnergyBar();showToast('⚡ Energía recargada!');
+  }
+  else if(s.type==='maxenergy'){game.maxEnergy+=s.energyAmount;game.energy+=s.energyAmount;updateEnergyBar();showToast('💪 Energía máxima +'+s.energyAmount+'!');}
+  else if(s.type==='instant'){const b=totalPerSec()*8*3600;game.wood+=b;game.totalWood+=b;showToast('💨 +'+fmt(b)+' 🪵!');}
   else if(s.type==='permanent'){game.inventory[s.id]=(game.inventory[s.id]||0)+1;showToast('✅ '+s.name+' activado!');}
   else{showToast('⚡ '+s.name+' activado!');}
   renderShop();renderInventory();updateResources();updateWithdrawPage();save();
