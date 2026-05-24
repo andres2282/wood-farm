@@ -5,11 +5,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
 <meta name="theme-color" content="#0a1f14" />
 <title>Wood Farm · Barzola Legacy</title>
-
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700;900&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-
 <style>
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
   html, body { height: 100%; overflow: hidden; }
@@ -22,7 +20,6 @@
     overscroll-behavior: none;
   }
   button { font-family: inherit; cursor: pointer; border: none; background: none; color: inherit; }
-
   :root {
     --bg-deep: #0a1f14;
     --bg-mid: #16321f;
@@ -34,11 +31,17 @@
     --mist: #c8d4c4;
     --danger: #c44;
     --success: #6ab04c;
-    --shadow-deep: 0 8px 32px rgba(0,0,0,0.6);
+    --rarity-common: #8a8a8a;
+    --rarity-uncommon: #4caf50;
+    --rarity-rare: #2196f3;
+    --rarity-epic: #9c27b0;
+    --rarity-legendary: #ff9800;
+    --rarity-mythic: #e91e63;
+    --rarity-divine: #f44336;
   }
-
   #app { position: relative; width: 100vw; height: 100vh; height: 100dvh; overflow: hidden; }
 
+  /* LOADING */
   #loading-screen {
     position: fixed; inset: 0;
     background: radial-gradient(ellipse at center, #1f4a2e 0%, #0a1f14 80%);
@@ -69,6 +72,7 @@
   }
   @keyframes spin { to { transform: rotate(360deg); } }
 
+  /* LOGIN */
   #login-screen {
     position: fixed; inset: 0;
     background:
@@ -99,7 +103,7 @@
     border: 1px solid rgba(212, 160, 76, 0.2);
     border-radius: 16px;
     padding: 2rem 1.5rem;
-    box-shadow: var(--shadow-deep);
+    box-shadow: 0 8px 32px rgba(0,0,0,0.6);
   }
   .login-card h2 {
     font-family: 'Cinzel', serif; font-size: 1.1rem;
@@ -123,7 +127,6 @@
   }
   .btn-primary:active { transform: scale(0.97); }
   .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
-
   .browser-warning {
     background: rgba(204, 68, 68, 0.15);
     border: 1px solid var(--danger);
@@ -135,56 +138,57 @@
     line-height: 1.5;
   }
 
+  /* GAME */
   #game-screen {
     position: relative; width: 100%; height: 100%;
     display: none; flex-direction: column;
     background: var(--bg-deep);
   }
   #game-screen.show { display: flex; }
-
   .game-header {
-    position: relative; padding: 1rem 1.2rem 0.6rem;
+    position: relative; padding: 0.8rem 1rem 0.5rem;
     background: linear-gradient(180deg, rgba(10, 31, 20, 0.95) 0%, transparent 100%);
     z-index: 10;
   }
   .header-top {
     display: flex; justify-content: space-between;
-    align-items: center; margin-bottom: 0.8rem;
+    align-items: center; margin-bottom: 0.6rem;
   }
   .level-badge {
-    display: flex; align-items: center; gap: 0.5rem;
-    padding: 0.4rem 0.85rem;
+    display: flex; align-items: center; gap: 0.4rem;
+    padding: 0.35rem 0.7rem;
     background: rgba(212, 160, 76, 0.15);
     border: 1px solid rgba(212, 160, 76, 0.4);
     border-radius: 999px;
-    font-size: 0.75rem; font-weight: 600;
+    font-size: 0.7rem; font-weight: 600;
     color: var(--gold-bright); letter-spacing: 0.05em;
   }
   .wallet-mini {
-    font-size: 0.7rem; color: var(--mist);
+    font-size: 0.65rem; color: var(--mist);
     font-family: 'Inter', monospace;
-    padding: 0.4rem 0.7rem;
+    padding: 0.35rem 0.6rem;
     background: rgba(0,0,0,0.3); border-radius: 999px;
   }
-  .balance-display { text-align: center; margin-bottom: 0.5rem; }
+  .balance-display { text-align: center; margin-bottom: 0.3rem; }
   .balance-label {
-    font-size: 0.65rem; text-transform: uppercase;
+    font-size: 0.6rem; text-transform: uppercase;
     letter-spacing: 0.3em; color: var(--mist);
-    margin-bottom: 0.2rem;
+    margin-bottom: 0.15rem;
   }
   .balance-amount {
     font-family: 'Cinzel', serif; font-weight: 700;
-    font-size: 2.2rem; color: var(--gold-bright);
+    font-size: 1.9rem; color: var(--gold-bright);
     letter-spacing: 0.02em; line-height: 1;
     text-shadow: 0 0 20px rgba(240, 200, 120, 0.4);
   }
   .balance-unit {
     font-family: 'Inter', sans-serif;
-    font-size: 0.9rem; font-weight: 500;
+    font-size: 0.85rem; font-weight: 500;
     color: var(--gold); margin-left: 0.3rem;
   }
-  .balance-onchain { font-size: 0.7rem; color: var(--mist); margin-top: 0.3rem; }
+  .balance-onchain { font-size: 0.65rem; color: var(--mist); margin-top: 0.2rem; }
 
+  /* SCENE */
   .forest-scene {
     position: relative; flex: 1; overflow: hidden;
     display: flex; align-items: center; justify-content: center;
@@ -203,7 +207,6 @@
   .forest-bg.forest-7 { background: radial-gradient(ellipse at 50% 50%, rgba(255, 100, 100, 0.3), transparent 60%), radial-gradient(ellipse at 70% 20%, rgba(255, 200, 100, 0.3), transparent 50%), linear-gradient(180deg, #2a0a0a 0%, #6a1a1a 50%, #3a0a0a 100%); }
   .forest-bg.forest-8 { background: radial-gradient(ellipse at 30% 80%, rgba(100, 200, 100, 0.5), transparent 60%), radial-gradient(ellipse at 70% 20%, rgba(200, 255, 150, 0.3), transparent 50%), linear-gradient(180deg, #0a3a0a 0%, #1a6a1a 50%, #0a4a0a 100%); }
   .forest-bg.forest-9 { background: radial-gradient(ellipse at 30% 80%, rgba(220, 220, 255, 0.5), transparent 60%), radial-gradient(ellipse at 70% 20%, rgba(240, 240, 255, 0.4), transparent 50%), linear-gradient(180deg, #2a2a5a 0%, #5a5a8a 50%, #3a3a6a 100%); }
-
   .particles { position: absolute; inset: 0; pointer-events: none; overflow: hidden; }
   .particle {
     position: absolute; width: 3px; height: 3px;
@@ -212,27 +215,40 @@
     animation: float-up 8s linear infinite; opacity: 0;
   }
   @keyframes float-up {
-    0% { transform: translateY(100vh) translateX(0); opacity: 0; }
+    0% { transform: translateY(100vh); opacity: 0; }
     10% { opacity: 0.6; } 90% { opacity: 0.6; }
     100% { transform: translateY(-10vh) translateX(40px); opacity: 0; }
   }
 
-  .tree-container { position: relative; width: 240px; height: 240px; z-index: 5; cursor: pointer; }
-  .tree-circle {
-    position: absolute; inset: 0; border-radius: 50%;
-    background: radial-gradient(circle at 50% 40%, rgba(106, 176, 76, 0.4), rgba(31, 74, 46, 0.8));
+  /* TREE TAP */
+  .tree-container {
+    position: relative; width: 260px; height: 260px;
+    z-index: 5; cursor: pointer;
+  }
+  .tree-image-wrap {
+    position: absolute; inset: 0;
+    border-radius: 50%;
+    background: radial-gradient(circle at 50% 40%, rgba(106, 176, 76, 0.3), rgba(31, 74, 46, 0.7));
     border: 3px solid rgba(212, 160, 76, 0.5);
     box-shadow: inset 0 0 40px rgba(0,0,0,0.4), 0 0 60px rgba(212, 160, 76, 0.2), 0 8px 32px rgba(0,0,0,0.6);
     display: flex; align-items: center; justify-content: center;
-    font-size: 6rem; transition: transform 0.1s ease;
+    overflow: hidden;
+    transition: transform 0.1s ease;
   }
-  .tree-container:active .tree-circle {
+  .tree-container:active .tree-image-wrap {
     transform: scale(0.93);
-    box-shadow: inset 0 0 60px rgba(0,0,0,0.6), 0 0 80px rgba(240, 200, 120, 0.5), 0 4px 16px rgba(0,0,0,0.6);
+    box-shadow: inset 0 0 60px rgba(0,0,0,0.6), 0 0 80px rgba(240, 200, 120, 0.5);
   }
-  .tree-emoji { filter: drop-shadow(0 4px 8px rgba(0,0,0,0.5)); animation: sway 4s ease-in-out infinite; }
-  @keyframes sway { 0%, 100% { transform: rotate(-2deg); } 50% { transform: rotate(2deg); } }
-
+  .tree-image {
+    width: 85%; height: 85%; object-fit: contain;
+    filter: drop-shadow(0 4px 12px rgba(0,0,0,0.6));
+    animation: sway 4s ease-in-out infinite;
+    pointer-events: none;
+  }
+  @keyframes sway {
+    0%, 100% { transform: rotate(-2deg) scale(1); }
+    50% { transform: rotate(2deg) scale(1.02); }
+  }
   .tap-indicator {
     position: absolute; font-family: 'Cinzel', serif;
     font-weight: 700; font-size: 1.4rem; color: var(--gold-bright);
@@ -245,19 +261,20 @@
     100% { transform: translateY(-80px) scale(0.8); opacity: 0; }
   }
 
+  /* ENERGY */
   .energy-section {
-    padding: 1rem 1.2rem;
+    padding: 0.8rem 1rem;
     background: linear-gradient(0deg, rgba(10, 31, 20, 0.95) 0%, transparent 100%);
   }
   .energy-row {
     display: flex; justify-content: space-between;
-    align-items: center; margin-bottom: 0.4rem;
-    font-size: 0.7rem; text-transform: uppercase;
+    align-items: center; margin-bottom: 0.3rem;
+    font-size: 0.65rem; text-transform: uppercase;
     letter-spacing: 0.2em; color: var(--mist);
   }
   .energy-value { font-family: 'Cinzel', serif; color: var(--gold-bright); font-weight: 700; }
   .energy-bar {
-    width: 100%; height: 10px;
+    width: 100%; height: 8px;
     background: rgba(0,0,0,0.4);
     border: 1px solid rgba(212, 160, 76, 0.3);
     border-radius: 999px; overflow: hidden;
@@ -269,25 +286,26 @@
     border-radius: 999px; transition: width 0.3s ease;
     box-shadow: 0 0 12px rgba(240, 200, 120, 0.4);
   }
-  .progress-section { margin-top: 0.8rem; }
+  .progress-section { margin-top: 0.6rem; }
 
+  /* NAV */
   .bottom-nav {
     display: flex; justify-content: space-around;
-    padding: 0.8rem 1rem 1.4rem;
+    padding: 0.6rem 0.6rem 1.2rem;
     background: linear-gradient(180deg, transparent 0%, rgba(0,0,0,0.6) 50%);
     border-top: 1px solid rgba(212, 160, 76, 0.2);
   }
   .nav-btn {
     display: flex; flex-direction: column;
-    align-items: center; gap: 0.2rem;
-    padding: 0.5rem 0.8rem; border-radius: 12px;
-    transition: background 0.2s; min-width: 70px;
+    align-items: center; gap: 0.15rem;
+    padding: 0.4rem 0.5rem; border-radius: 12px;
+    transition: background 0.2s; min-width: 60px;
   }
   .nav-btn:active { background: rgba(212, 160, 76, 0.15); }
-  .nav-icon { font-size: 1.4rem; margin-bottom: 0.1rem; }
+  .nav-icon { font-size: 1.3rem; margin-bottom: 0.05rem; }
   .nav-label {
-    font-size: 0.65rem; text-transform: uppercase;
-    letter-spacing: 0.1em; color: var(--mist); font-weight: 500;
+    font-size: 0.6rem; text-transform: uppercase;
+    letter-spacing: 0.08em; color: var(--mist); font-weight: 500;
   }
   .nav-btn.claim {
     background: linear-gradient(135deg, var(--gold-bright), var(--gold));
@@ -296,6 +314,7 @@
   }
   .nav-btn.claim .nav-label { color: #1a1009; font-weight: 700; }
 
+  /* MODAL */
   .modal-backdrop {
     position: fixed; inset: 0;
     background: rgba(0, 0, 0, 0.8);
@@ -307,11 +326,11 @@
   .modal-backdrop.show { display: flex; }
   @keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }
   .modal {
-    width: 100%; max-width: 480px; max-height: 88vh;
+    width: 100%; max-width: 480px; max-height: 90vh;
     background: linear-gradient(180deg, #1f4a2e 0%, #0a1f14 100%);
     border-top: 2px solid var(--gold);
     border-radius: 24px 24px 0 0;
-    padding: 1.5rem 1.2rem 2rem;
+    padding: 1.3rem 1rem 1.8rem;
     overflow-y: auto;
     animation: slide-up 0.3s ease;
     box-shadow: 0 -20px 60px rgba(0,0,0,0.8);
@@ -319,34 +338,141 @@
   @keyframes slide-up { from { transform: translateY(100%); } to { transform: translateY(0); } }
   .modal-header {
     display: flex; justify-content: space-between;
-    align-items: center; margin-bottom: 1.5rem;
+    align-items: center; margin-bottom: 1.3rem;
   }
   .modal-title {
-    font-family: 'Cinzel', serif; font-size: 1.3rem;
+    font-family: 'Cinzel', serif; font-size: 1.2rem;
     font-weight: 700; color: var(--gold-bright);
     letter-spacing: 0.05em;
   }
   .modal-close {
-    width: 36px; height: 36px; border-radius: 50%;
+    width: 32px; height: 32px; border-radius: 50%;
     background: rgba(255,255,255,0.1);
     display: flex; align-items: center; justify-content: center;
-    font-size: 1.3rem; color: var(--mist);
+    font-size: 1.2rem; color: var(--mist);
   }
-  .modal-section { margin-bottom: 1.5rem; }
+  .modal-section { margin-bottom: 1.3rem; }
   .modal-label {
-    font-size: 0.7rem; text-transform: uppercase;
+    font-size: 0.65rem; text-transform: uppercase;
     letter-spacing: 0.2em; color: var(--mist);
-    margin-bottom: 0.5rem;
+    margin-bottom: 0.4rem;
   }
   .modal-value {
-    font-family: 'Cinzel', serif; font-size: 1.5rem;
+    font-family: 'Cinzel', serif; font-size: 1.4rem;
     color: var(--gold-bright); font-weight: 700;
   }
 
+  /* CARDS (árboles y mejoras) */
+  .item-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.7rem;
+  }
+  .item-card {
+    background: rgba(0,0,0,0.4);
+    border: 1px solid rgba(212, 160, 76, 0.2);
+    border-radius: 14px;
+    padding: 0.7rem;
+    display: flex; flex-direction: column;
+    transition: all 0.2s;
+    position: relative;
+    overflow: hidden;
+  }
+  .item-card.active {
+    border-color: var(--gold-bright);
+    background: rgba(212, 160, 76, 0.12);
+    box-shadow: 0 0 16px rgba(212, 160, 76, 0.3);
+  }
+  .item-card.locked { opacity: 0.55; }
+  .item-img-wrap {
+    width: 100%; aspect-ratio: 1;
+    background: linear-gradient(180deg, rgba(31, 74, 46, 0.4), rgba(10, 31, 20, 0.6));
+    border-radius: 10px;
+    overflow: hidden;
+    margin-bottom: 0.5rem;
+    border: 1px solid rgba(212, 160, 76, 0.2);
+    display: flex; align-items: center; justify-content: center;
+  }
+  .item-img-wrap img {
+    width: 100%; height: 100%; object-fit: contain;
+  }
+  .item-name {
+    font-family: 'Cinzel', serif;
+    font-size: 0.78rem;
+    font-weight: 700;
+    color: var(--gold-bright);
+    line-height: 1.1;
+    margin-bottom: 0.2rem;
+    min-height: 1.7rem;
+  }
+  .item-effect {
+    font-size: 0.62rem;
+    color: var(--mist);
+    margin-bottom: 0.4rem;
+    line-height: 1.3;
+    min-height: 1.5rem;
+  }
+  .item-rarity {
+    display: inline-block;
+    font-size: 0.55rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    padding: 0.15rem 0.45rem;
+    border-radius: 999px;
+    margin-bottom: 0.4rem;
+    color: white;
+    align-self: flex-start;
+  }
+  .item-rarity.common { background: var(--rarity-common); }
+  .item-rarity.uncommon { background: var(--rarity-uncommon); }
+  .item-rarity.rare { background: var(--rarity-rare); }
+  .item-rarity.epic { background: var(--rarity-epic); }
+  .item-rarity.legendary { background: var(--rarity-legendary); }
+  .item-rarity.mythic { background: var(--rarity-mythic); }
+  .item-rarity.divine { background: var(--rarity-divine); }
+  .item-btn {
+    width: 100%;
+    padding: 0.5rem;
+    background: linear-gradient(135deg, var(--gold-bright), var(--gold));
+    color: #1a1009;
+    border-radius: 8px;
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-top: auto;
+  }
+  .item-btn.wld {
+    background: linear-gradient(135deg, #fff, #ddd);
+    color: #000;
+  }
+  .item-btn.brzl {
+    background: linear-gradient(135deg, #6aa84f, #4a7c3a);
+    color: white;
+  }
+  .item-btn.equipped {
+    background: linear-gradient(135deg, var(--bg-light), #2c5020);
+    color: var(--gold-bright);
+  }
+  .item-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+  .item-badge-active {
+    position: absolute;
+    top: 0.4rem; right: 0.4rem;
+    background: var(--gold-bright);
+    color: #1a1009;
+    font-size: 0.55rem;
+    font-weight: 700;
+    padding: 0.15rem 0.4rem;
+    border-radius: 999px;
+    z-index: 2;
+  }
+
+  /* TIER cards */
   .tier-card {
     background: rgba(0,0,0,0.3);
     border: 1px solid rgba(212, 160, 76, 0.2);
-    border-radius: 12px; padding: 1rem; margin-bottom: 0.7rem;
+    border-radius: 12px; padding: 0.9rem; margin-bottom: 0.6rem;
   }
   .tier-card.active {
     border-color: var(--gold-bright);
@@ -354,20 +480,23 @@
   }
   .tier-card-top {
     display: flex; justify-content: space-between;
-    align-items: center; margin-bottom: 0.5rem;
+    align-items: center; margin-bottom: 0.4rem;
   }
   .tier-name {
-    font-family: 'Cinzel', serif; font-size: 1rem;
+    font-family: 'Cinzel', serif; font-size: 0.95rem;
     font-weight: 700; color: var(--gold-bright);
   }
-  .tier-perks { font-size: 0.75rem; color: var(--mist); margin-bottom: 0.5rem; }
-  .tier-actions { display: flex; gap: 0.5rem; }
+  .tier-perks { font-size: 0.7rem; color: var(--mist); margin-bottom: 0.4rem; }
+  .tier-actions { display: flex; gap: 0.4rem; }
   .tier-btn {
-    flex: 1; padding: 0.6rem;
-    background: var(--gold); color: #1a1009;
-    border-radius: 8px; font-size: 0.75rem;
+    flex: 1; padding: 0.55rem;
+    border-radius: 8px; font-size: 0.7rem;
     font-weight: 700; text-transform: uppercase;
     letter-spacing: 0.05em;
+  }
+  .tier-btn.wld {
+    background: linear-gradient(135deg, #fff, #ddd);
+    color: #000;
   }
   .tier-btn.brzl {
     background: linear-gradient(135deg, var(--bg-light), #2c5020);
@@ -375,6 +504,7 @@
   }
   .tier-btn:disabled { opacity: 0.4; cursor: not-allowed; }
 
+  /* TOAST */
   .toast {
     position: fixed;
     top: 1.2rem; left: 50%;
@@ -385,7 +515,7 @@
     padding: 0.8rem 1.4rem;
     border-radius: 999px;
     font-size: 0.85rem; font-weight: 600;
-    box-shadow: var(--shadow-deep);
+    box-shadow: 0 8px 32px rgba(0,0,0,0.6);
     z-index: 999; opacity: 0;
     pointer-events: none;
     transition: opacity 0.3s, transform 0.3s;
@@ -394,20 +524,19 @@
   .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); pointer-events: auto; }
   .toast.error { border-color: var(--danger); }
   .toast.success { border-color: var(--success); }
-
   .version-tag {
     position: absolute;
-    bottom: 0.3rem; right: 0.5rem;
-    font-size: 0.55rem;
+    bottom: 0.2rem; right: 0.4rem;
+    font-size: 0.5rem;
     color: rgba(200, 212, 196, 0.3);
     font-family: monospace; z-index: 100;
   }
+  /* Filtros para hacer las imágenes de árboles más oscuras cuando están bloqueadas */
+  .item-card.locked .item-img-wrap { filter: grayscale(80%) brightness(0.6); }
 </style>
 </head>
-
 <body>
 <div id="app">
-
   <div id="loading-screen">
     <div class="loading-logo">WOOD FARM</div>
     <div class="loading-sub">Barzola Legacy</div>
@@ -451,8 +580,8 @@
       <div class="forest-bg forest-1" id="forest-bg"></div>
       <div class="particles" id="particles"></div>
       <div class="tree-container" id="tree-tap">
-        <div class="tree-circle">
-          <span class="tree-emoji">🌳</span>
+        <div class="tree-image-wrap">
+          <img class="tree-image" id="tree-image" src="https://andres2282.github.io/wood-farm-assets/a1.jpeg" alt="Tree" />
         </div>
       </div>
     </div>
@@ -477,24 +606,28 @@
     </div>
 
     <nav class="bottom-nav">
-      <button class="nav-btn" data-modal="shop">
-        <span class="nav-icon">🌲</span>
-        <span class="nav-label">Bosques</span>
+      <button class="nav-btn" data-modal="trees">
+        <span class="nav-icon">🌳</span>
+        <span class="nav-label">Árboles</span>
       </button>
-      <button class="nav-btn" data-modal="tier">
-        <span class="nav-icon">👑</span>
-        <span class="nav-label">Membresía</span>
+      <button class="nav-btn" data-modal="upgrades">
+        <span class="nav-icon">⚙️</span>
+        <span class="nav-label">Mejoras</span>
       </button>
       <button class="nav-btn claim" data-modal="claim">
         <span class="nav-icon">💰</span>
         <span class="nav-label">Claim</span>
+      </button>
+      <button class="nav-btn" data-modal="tier">
+        <span class="nav-icon">👑</span>
+        <span class="nav-label">VIP</span>
       </button>
       <button class="nav-btn" data-modal="stats">
         <span class="nav-icon">📊</span>
         <span class="nav-label">Stats</span>
       </button>
     </nav>
-    <div class="version-tag">v2.0 · alpha</div>
+    <div class="version-tag">v3.0 · alpha</div>
   </div>
 
   <div class="modal-backdrop" id="modal-backdrop">
@@ -513,7 +646,6 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.7.0/ethers.umd.min.js"></script>
 
 <script type="module">
-  // MiniKit
   try {
     const { MiniKit } = await import('https://cdn.jsdelivr.net/npm/@worldcoin/minikit-js/+esm');
     MiniKit.install('app_345890bba13f14519b84931b80bf9ac8');
@@ -527,12 +659,10 @@
 </script>
 
 <script type="module">
-  // Firebase
   let db = null;
   try {
     const { initializeApp } = await import("https://www.gstatic.com/firebasejs/12.13.0/firebase-app.js");
     const { getFirestore, doc, getDoc, setDoc, updateDoc, serverTimestamp } = await import("https://www.gstatic.com/firebasejs/12.13.0/firebase-firestore.js");
-
     const fbApp = initializeApp({
       apiKey: "AIzaSyCobpf2WVtkfQ00m-Botm7pQNmpFaQY26U",
       authDomain: "wood-farm-90d95.firebaseapp.com",
@@ -550,8 +680,9 @@
   }
   window._dbReady = !!db;
 </script>
-
 <script>
+  const ASSETS_BASE = 'https://andres2282.github.io/wood-farm-assets';
+
   const CONFIG = {
     CHAIN_ID: 480,
     WOOD_TOKEN: "0xCB4a0a8a8A61E79f13EeB1Eb4ABD6712e40c598D",
@@ -559,20 +690,54 @@
     BRZL_TOKEN: "0xD021eE02CD3854A5D1e82cBeBdF277ce0DC96dA4",
     WLD_TOKEN: "0x2cFc85d8E48F8EAB294be644d9E25C3030863003",
     TREASURY: "0x57CBd2829e8e5A61793C12424f4a7eA7B4D7d503",
-    ENERGY_MAX: 100,
+    ENERGY_MAX_BASE: 100,
     ENERGY_REGEN_MS: 3000,
     WOOD_PER_LEVEL: 100000,
     CLAIM_MIN: 100,
     FORESTS: [
-      { id: 1, name: 'BOSQUE VERDE',     mult: 1,  emoji: '🌳' },
-      { id: 2, name: 'BOSQUE OTOÑAL',    mult: 2,  emoji: '🍁' },
-      { id: 3, name: 'BOSQUE HELADO',    mult: 3,  emoji: '❄️' },
-      { id: 4, name: 'BOSQUE MÍSTICO',   mult: 4,  emoji: '🔮' },
-      { id: 5, name: 'BOSQUE SAGRADO',   mult: 5,  emoji: '✨' },
-      { id: 6, name: 'BOSQUE CELESTIAL', mult: 6,  emoji: '☁️' },
-      { id: 7, name: 'BOSQUE ETERNO',    mult: 7,  emoji: '🔥' },
-      { id: 8, name: 'BOSQUE ENCANTADO', mult: 8,  emoji: '🌟' },
-      { id: 9, name: 'BOSQUE DIVINO',    mult: 12, emoji: '💫' }
+      { id: 1, name: 'BOSQUE VERDE' },
+      { id: 2, name: 'BOSQUE OTOÑAL' },
+      { id: 3, name: 'BOSQUE HELADO' },
+      { id: 4, name: 'BOSQUE MÍSTICO' },
+      { id: 5, name: 'BOSQUE SAGRADO' },
+      { id: 6, name: 'BOSQUE CELESTIAL' },
+      { id: 7, name: 'BOSQUE ETERNO' },
+      { id: 8, name: 'BOSQUE ENCANTADO' },
+      { id: 9, name: 'BOSQUE DIVINO' }
+    ],
+    TREES: [
+      { id: 1,  name: 'Roble Verde',      img: 'a1.jpeg',  woodTap: 1,  rarity: 'common',    price: 0,        currency: 'wood' },
+      { id: 2,  name: 'Pino',             img: 'a2.jpeg',  woodTap: 2,  rarity: 'common',    price: 500,      currency: 'wood' },
+      { id: 3,  name: 'Abedul',           img: 'a3.jpeg',  woodTap: 3,  rarity: 'uncommon',  price: 2000,     currency: 'wood' },
+      { id: 4,  name: 'Cedro',            img: 'a4.jpeg',  woodTap: 5,  rarity: 'rare',      price: 10000,    currency: 'wood' },
+      { id: 5,  name: 'Palma Tropical',   img: 'a5.jpeg',  woodTap: 8,  rarity: 'epic',      price: 50000,    currency: 'wood' },
+      { id: 6,  name: 'Árbol Dorado',     img: 'a6.jpeg',  woodTap: 15, rarity: 'legendary', price: 200000,   currency: 'wood' },
+      { id: 7,  name: 'Árbol de Cristal', img: 'a7.jpeg',  woodTap: 10, rarity: 'epic',      price: 80000,    currency: 'wood' },
+      { id: 8,  name: 'Cerezo Sagrado',   img: 'a8.jpeg',  woodTap: 10, rarity: 'epic',      price: 80000,    currency: 'wood' },
+      { id: 9,  name: 'Árbol Espíritu',   img: 'a9.jpeg',  woodTap: 20, rarity: 'legendary', price: 500000,   currency: 'wood' },
+      { id: 10, name: 'Árbol Ígneo',      img: 'a10.jpeg', woodTap: 20, rarity: 'legendary', price: 500000,   currency: 'wood' },
+      { id: 11, name: 'Árbol Lunar',      img: 'a11.jpeg', woodTap: 25, rarity: 'mythic',    price: 1000000,  currency: 'wood' },
+      { id: 12, name: 'Yggdrasil',        img: 'a12.jpeg', woodTap: 50, rarity: 'divine',    price: 5000000,  currency: 'wood' }
+    ],
+    UPGRADES: [
+      // Mejoras Básicas (WOOD)
+      { id: 1,  name: 'Hacha Básica',           img: 'hacha.jpeg', effect: 'Inicial',                  effectKey: 'init',         value: 0,   rarity: 'common',    price: 0,        currency: 'wood', desc: 'Tu herramienta inicial' },
+      { id: 2,  name: 'Hacha Mejorada',         img: '2.jpeg',     effect: '+1 WOOD por tap',          effectKey: 'tapBonus',     value: 1,   rarity: 'common',    price: 5000,     currency: 'wood', desc: 'Más madera por tap' },
+      { id: 3,  name: 'Hacha de Titanio',       img: '3.jpeg',     effect: '+2 WOOD por tap',          effectKey: 'tapBonus',     value: 2,   rarity: 'uncommon',  price: 25000,    currency: 'wood', desc: 'Hacha resistente' },
+      { id: 4,  name: 'Tanque de Energía',      img: '4.jpeg',     effect: '+50 energía máxima',       effectKey: 'energyMax',    value: 50,  rarity: 'uncommon',  price: 10000,    currency: 'wood', desc: 'Más capacidad' },
+      { id: 5,  name: 'Recuperación Rápida',    img: '5.jpeg',     effect: 'Regeneración 2x rápida',   effectKey: 'regenSpeed',   value: 2,   rarity: 'rare',      price: 20000,    currency: 'wood', desc: 'Energía vuelve más rápido' },
+      { id: 6,  name: 'Sierra Mecánica',        img: '6.jpeg',     effect: '+3 WOOD por tap',          effectKey: 'tapBonus',     value: 3,   rarity: 'rare',      price: 50000,    currency: 'wood', desc: 'Corta como mantequilla' },
+      // Mejoras Avanzadas (BRZL)
+      { id: 7,  name: 'Producción Offline',     img: '7.jpeg',     effect: 'Gana WOOD sin estar',      effectKey: 'offline',      value: 1,   rarity: 'epic',      price: 200000,   currency: 'brzl', desc: 'Genera mientras no juegas' },
+      { id: 8,  name: 'Tractor Forestal',       img: '8.jpeg',     effect: '+5 WOOD por tap',          effectKey: 'tapBonus',     value: 5,   rarity: 'epic',      price: 300000,   currency: 'brzl', desc: 'Trabaja por vos' },
+      { id: 9,  name: 'Aserradero Automático',  img: '9.jpeg',     effect: '+10 WOOD/segundo idle',    effectKey: 'idleRate',     value: 10,  rarity: 'epic',      price: 500000,   currency: 'brzl', desc: 'Producción pasiva' },
+      { id: 10, name: 'Espíritu del Bosque',    img: '10.jpeg',    effect: 'x2 WOOD por tap',          effectKey: 'tapMult',      value: 2,   rarity: 'legendary', price: 800000,   currency: 'brzl', desc: 'El bosque te bendice' },
+      // Mejoras Legendarias (WLD)
+      { id: 11, name: 'Cofre Premium',          img: '11.jpeg',    effect: 'Premio diario aleatorio',  effectKey: 'dailyChest',   value: 1,   rarity: 'epic',      price: 15,       currency: 'wld',  desc: 'Sorpresa cada día' },
+      { id: 12, name: 'Escudo de Racha',        img: '12.jpeg',    effect: 'Protege tu racha diaria',  effectKey: 'streakShield', value: 1,   rarity: 'legendary', price: 25,       currency: 'wld',  desc: 'No perdés la racha' },
+      { id: 13, name: 'Energía Infinita',       img: '13.jpeg',    effect: 'Sin límite 1h/día',        effectKey: 'energyInf',    value: 1,   rarity: 'legendary', price: 50,       currency: 'wld',  desc: 'Tap sin parar 1h' },
+      { id: 14, name: 'Tractor Legendario',     img: '14.jpeg',    effect: '+20 WOOD por tap',         effectKey: 'tapBonus',     value: 20,  rarity: 'legendary', price: 75,       currency: 'wld',  desc: 'Máquina de guerra' },
+      { id: 15, name: 'Mega Aserradero',        img: '15.jpeg',    effect: '+100 WOOD/seg idle',       effectKey: 'idleRate',     value: 100, rarity: 'mythic',    price: 150,      currency: 'wld',  desc: 'Imperio maderero' }
     ],
     TIERS: [
       { id: 1, name: 'BRONZE',  wld: 10,  brzl: 100000,  daily: 1500 },
@@ -585,11 +750,14 @@
   const state = {
     address: null,
     forestId: 1,
+    activeTree: 1,           // ID del árbol equipado
+    ownedTrees: [1],         // árboles desbloqueados
+    ownedUpgrades: [1],      // mejoras desbloqueadas (Hacha Básica viene de inicio)
     pending: 0,
     totalFarmed: 0,
     onchain: 0,
     tier: 0,
-    energy: CONFIG.ENERGY_MAX,
+    energy: 100,
     lastEnergyTs: Date.now()
   };
 
@@ -608,6 +776,42 @@
     return n.toString();
   }
 
+  // ============ EFECTOS DE MEJORAS ============
+  function getEffectSum(key) {
+    let sum = 0;
+    state.ownedUpgrades.forEach(id => {
+      const up = CONFIG.UPGRADES.find(u => u.id === id);
+      if (up && up.effectKey === key) sum += up.value;
+    });
+    return sum;
+  }
+  function getEffectMult(key) {
+    let mult = 1;
+    state.ownedUpgrades.forEach(id => {
+      const up = CONFIG.UPGRADES.find(u => u.id === id);
+      if (up && up.effectKey === key) mult *= up.value;
+    });
+    return mult;
+  }
+  function getEnergyMax() {
+    return CONFIG.ENERGY_MAX_BASE + getEffectSum('energyMax');
+  }
+  function getEnergyRegenMs() {
+    const speed = 1 + getEffectSum('regenSpeed');
+    return CONFIG.ENERGY_REGEN_MS / speed;
+  }
+  function getWoodPerTap() {
+    const tree = CONFIG.TREES.find(t => t.id === state.activeTree);
+    const base = tree ? tree.woodTap : 1;
+    const bonus = getEffectSum('tapBonus');
+    const mult = getEffectMult('tapMult');
+    return (base + bonus) * mult;
+  }
+  function getIdleRate() {
+    return getEffectSum('idleRate'); // WOOD por segundo
+  }
+
+  // ============ FIREBASE ============
   async function loadUser(address) {
     if (!window._dbReady || !window._fb) return;
     try {
@@ -616,20 +820,36 @@
       const snap = await getDoc(ref);
       if (snap.exists()) {
         const d = snap.data();
-        state.energy = d.energy ?? CONFIG.ENERGY_MAX;
+        state.energy = d.energy ?? getEnergyMax();
         state.forestId = d.forestId ?? 1;
+        state.activeTree = d.activeTree ?? 1;
+        state.ownedTrees = d.ownedTrees ?? [1];
+        state.ownedUpgrades = d.ownedUpgrades ?? [1];
         state.pending = d.pending ?? 0;
         state.totalFarmed = d.totalFarmed ?? 0;
         state.tier = d.tier ?? 0;
         state.lastEnergyTs = d.lastEnergyTs ?? Date.now();
+        // Calcular WOOD idle ganado mientras estuvo afuera
+        const idleRate = getIdleRate();
+        if (idleRate > 0) {
+          const elapsedSec = Math.floor((Date.now() - state.lastEnergyTs) / 1000);
+          const idleWood = Math.min(idleRate * elapsedSec, idleRate * 3600 * 8); // cap 8h
+          if (idleWood > 0) {
+            state.pending += idleWood;
+            state.totalFarmed += idleWood;
+            showToast(`💤 Ganaste ${fmt(idleWood)} WOOD mientras no estabas`, 'success');
+          }
+        }
+        // Regenerar energía
         const elapsed = Date.now() - state.lastEnergyTs;
-        const regen = Math.floor(elapsed / CONFIG.ENERGY_REGEN_MS);
-        state.energy = Math.min(CONFIG.ENERGY_MAX, state.energy + regen);
+        const regen = Math.floor(elapsed / getEnergyRegenMs());
+        state.energy = Math.min(getEnergyMax(), state.energy + regen);
       } else {
         await setDoc(ref, {
           address: address.toLowerCase(),
-          energy: CONFIG.ENERGY_MAX,
-          forestId: 1, pending: 0, totalFarmed: 0, tier: 0,
+          energy: 100, forestId: 1,
+          activeTree: 1, ownedTrees: [1], ownedUpgrades: [1],
+          pending: 0, totalFarmed: 0, tier: 0,
           lastEnergyTs: Date.now(),
           createdAt: serverTimestamp()
         });
@@ -647,26 +867,25 @@
         const { db, doc, updateDoc, serverTimestamp } = window._fb;
         const ref = doc(db, 'users', state.address.toLowerCase());
         await updateDoc(ref, {
-          energy: state.energy,
-          forestId: state.forestId,
-          pending: state.pending,
-          totalFarmed: state.totalFarmed,
-          tier: state.tier,
-          lastEnergyTs: state.lastEnergyTs,
+          energy: state.energy, forestId: state.forestId,
+          activeTree: state.activeTree, ownedTrees: state.ownedTrees,
+          ownedUpgrades: state.ownedUpgrades,
+          pending: state.pending, totalFarmed: state.totalFarmed,
+          tier: state.tier, lastEnergyTs: state.lastEnergyTs,
           updatedAt: serverTimestamp()
         });
       } catch (e) { console.error('save:', e); }
     }, 2000);
   }
 
+  // ============ GAME LOGIC ============
   function getCurrentForest() { return CONFIG.FORESTS[state.forestId - 1]; }
-  function getWoodPerTap() { return getCurrentForest().mult; }
   function checkLevelUp() {
     const needed = state.forestId * CONFIG.WOOD_PER_LEVEL;
     if (state.totalFarmed >= needed && state.forestId < CONFIG.FORESTS.length) {
       state.forestId++;
       const f = getCurrentForest();
-      showToast(`🎉 ¡Subiste a ${f.name}! (x${f.mult})`, 'success');
+      showToast(`🎉 ¡Subiste a ${f.name}!`, 'success');
       updateForestUI();
     }
   }
@@ -701,10 +920,12 @@
     setTimeout(() => ind.remove(), 900);
   }
 
+  // ============ UI ============
   function updateGameUI() {
     $('balance-pending').textContent = fmt(state.pending);
     $('energy-current').textContent = state.energy;
-    $('energy-fill').style.width = (state.energy / CONFIG.ENERGY_MAX * 100) + '%';
+    $('energy-max').textContent = getEnergyMax();
+    $('energy-fill').style.width = (state.energy / getEnergyMax() * 100) + '%';
     const needed = state.forestId * CONFIG.WOOD_PER_LEVEL;
     const prev = (state.forestId - 1) * CONFIG.WOOD_PER_LEVEL;
     const progress = Math.max(0, state.totalFarmed - prev);
@@ -718,7 +939,13 @@
     const f = getCurrentForest();
     $('forest-name').textContent = f.name;
     $('forest-bg').className = `forest-bg forest-${f.id}`;
-    $('tree-tap').querySelector('.tree-emoji').textContent = f.emoji;
+  }
+  function updateTreeImage() {
+    const tree = CONFIG.TREES.find(t => t.id === state.activeTree);
+    if (tree) {
+      $('tree-image').src = `${ASSETS_BASE}/${tree.img}`;
+      $('tree-image').alt = tree.name;
+    }
   }
   function updateWalletUI() {
     if (state.address) {
@@ -727,16 +954,28 @@
     }
   }
 
+  // Loop principal: regen + idle
   setInterval(() => {
-    if (state.energy < CONFIG.ENERGY_MAX) {
+    const max = getEnergyMax();
+    if (state.energy < max) {
       const elapsed = Date.now() - state.lastEnergyTs;
-      const regen = Math.floor(elapsed / CONFIG.ENERGY_REGEN_MS);
+      const regenMs = getEnergyRegenMs();
+      const regen = Math.floor(elapsed / regenMs);
       if (regen > 0) {
-        state.energy = Math.min(CONFIG.ENERGY_MAX, state.energy + regen);
-        state.lastEnergyTs += regen * CONFIG.ENERGY_REGEN_MS;
+        state.energy = Math.min(max, state.energy + regen);
+        state.lastEnergyTs += regen * regenMs;
         updateGameUI();
         scheduleSave();
       }
+    }
+    // Idle WOOD (1 vez por segundo)
+    const idleRate = getIdleRate();
+    if (idleRate > 0 && state.address) {
+      state.pending += idleRate;
+      state.totalFarmed += idleRate;
+      updateGameUI();
+      checkLevelUp();
+      scheduleSave();
     }
   }, 1000);
 
@@ -750,18 +989,110 @@
     setTimeout(() => p.remove(), 11000);
   }
   setInterval(spawnParticle, 800);
+</script>
+<script>
+  // ============ COMPRAS ============
 
+  // Comprar árbol con WOOD (descuento de Firebase)
+  async function buyTree(treeId) {
+    const tree = CONFIG.TREES.find(t => t.id === treeId);
+    if (!tree) return;
+    if (state.ownedTrees.includes(treeId)) {
+      // Si ya lo tiene, lo equipa
+      state.activeTree = treeId;
+      updateTreeImage();
+      showToast(`🌳 Equipaste ${tree.name}`, 'success');
+      scheduleSave();
+      closeModal();
+      return;
+    }
+    if (state.pending < tree.price) {
+      showToast(`Necesitás ${fmt(tree.price)} WOOD farmeado`, 'error');
+      return;
+    }
+    // Descontar WOOD farmeado
+    state.pending -= tree.price;
+    state.ownedTrees.push(treeId);
+    state.activeTree = treeId;
+    updateTreeImage();
+    updateGameUI();
+    showToast(`✨ ¡Desbloqueaste ${tree.name}!`, 'success');
+    scheduleSave();
+    closeModal();
+  }
+
+  // Comprar mejora
+  async function buyUpgrade(upgradeId) {
+    const up = CONFIG.UPGRADES.find(u => u.id === upgradeId);
+    if (!up) return;
+    if (state.ownedUpgrades.includes(upgradeId)) {
+      showToast('Ya tenés esta mejora', '');
+      return;
+    }
+
+    // Compras con WOOD farmeado (off-chain)
+    if (up.currency === 'wood') {
+      if (state.pending < up.price) {
+        showToast(`Necesitás ${fmt(up.price)} WOOD`, 'error');
+        return;
+      }
+      state.pending -= up.price;
+      state.ownedUpgrades.push(upgradeId);
+      updateGameUI();
+      showToast(`⚙️ ¡${up.name} activada!`, 'success');
+      scheduleSave();
+      closeModal();
+      return;
+    }
+
+    // Compras con BRZL o WLD (on-chain transfer al treasury)
+    const mk = window._MiniKit;
+    if (!mk || !mk.isInstalled()) {
+      showToast('Abrí en World App para comprar', 'error');
+      return;
+    }
+    try {
+      showToast('Procesando pago...', '');
+      const tokenAddr = up.currency === 'wld' ? CONFIG.WLD_TOKEN : CONFIG.BRZL_TOKEN;
+      const amount = ethers.parseUnits(up.price.toString(), 18).toString();
+
+      // transfer(treasury, amount)
+      const transferData = '0xa9059cbb' +
+        CONFIG.TREASURY.slice(2).padStart(64, '0').toLowerCase() +
+        BigInt(amount).toString(16).padStart(64, '0');
+
+      const res = await mk.sendTransaction({
+        chainId: 480,
+        transactions: [
+          { to: tokenAddr, data: transferData }
+        ]
+      });
+
+      const payload = res?.finalPayload || res?.data || res;
+      if (payload?.status === 'error' || payload?.error_code) {
+        showToast('Pago cancelado', 'error');
+        return;
+      }
+
+      // Activar mejora
+      state.ownedUpgrades.push(upgradeId);
+      updateGameUI();
+      showToast(`⚙️ ¡${up.name} comprada!`, 'success');
+      scheduleSave();
+      closeModal();
+    } catch (e) {
+      console.error('buyUpgrade:', e);
+      showToast('Error: ' + (e.message || '').slice(0, 40), 'error');
+    }
+  }
+
+  // Comprar membresía
   async function buyMembership(tierId, payWith) {
     const mk = window._MiniKit;
     if (!mk || !mk.isInstalled()) {
-      showToast('Necesitás abrir esta app en World App', 'error');
+      showToast('Abrí en World App', 'error');
       return;
     }
-    if (!state.address) {
-      showToast('Conectá tu wallet primero', 'error');
-      return;
-    }
-
     const tier = CONFIG.TIERS[tierId - 1];
     const isWLD = payWith === 'wld';
 
@@ -770,13 +1101,11 @@
       const amount = isWLD
         ? ethers.parseUnits(tier.wld.toString(), 18).toString()
         : ethers.parseUnits(tier.brzl.toString(), 18).toString();
-
       const tokenAddr = isWLD ? CONFIG.WLD_TOKEN : CONFIG.BRZL_TOKEN;
 
       const approveData = '0x095ea7b3' +
         CONFIG.WOOD_FARM.slice(2).padStart(64, '0').toLowerCase() +
         BigInt(amount).toString(16).padStart(64, '0');
-
       const buySelector = ethers.id('buyMembership(uint8,bool)').slice(0, 10);
       const tierHex = tierId.toString(16).padStart(64, '0');
       const boolHex = (isWLD ? '1' : '0').padStart(64, '0');
@@ -789,13 +1118,11 @@
           { to: CONFIG.WOOD_FARM, data: buyData }
         ]
       });
-
       const payload = res?.finalPayload || res?.data || res;
       if (payload?.status === 'error' || payload?.error_code) {
-        showToast('Error: ' + (payload.error_code || 'desconocido').slice(0, 30), 'error');
+        showToast('Compra cancelada', 'error');
         return;
       }
-
       state.tier = tierId;
       scheduleSave();
       showToast(`👑 ¡Membresía ${tier.name} activada!`, 'success');
@@ -807,27 +1134,97 @@
   }
 
   async function doClaim() {
-    showToast('Claim on-chain requiere backend de firma (en construcción)', 'error');
+    showToast('Claim requiere backend de firma (próximamente)', 'error');
+  }
+
+  // ============ MODALES ============
+  function rarityLabel(r) {
+    return ({
+      common:'Común', uncommon:'Poco Común', rare:'Raro',
+      epic:'Épico', legendary:'Legendario', mythic:'Mítico', divine:'Divino'
+    })[r] || r;
+  }
+  function priceLabel(item) {
+    if (item.currency === 'wood') return `${fmt(item.price)} WOOD`;
+    if (item.currency === 'wld')  return `${item.price} WLD`;
+    if (item.currency === 'brzl') return `${fmt(item.price)} BRZL`;
+    return '?';
   }
 
   function openModal(type) {
-    const titles = { shop:'Bosques', tier:'Membresías', claim:'Reclamar WOOD', stats:'Estadísticas' };
+    const titles = {
+      trees:'Mis Árboles', upgrades:'Mejoras',
+      claim:'Reclamar WOOD', tier:'Membresías VIP', stats:'Estadísticas'
+    };
     $('modal-title').textContent = titles[type] || 'Info';
     const body = $('modal-body');
     body.innerHTML = '';
 
-    if (type === 'shop') {
-      body.innerHTML = CONFIG.FORESTS.map(f => `
-        <div class="tier-card ${f.id === state.forestId ? 'active' : ''}">
-          <div class="tier-card-top">
-            <div>
-              <div class="tier-name">${f.emoji} ${f.name}</div>
-              <div class="tier-perks">Multiplicador x${f.mult} · ${f.id <= state.forestId ? 'Desbloqueado' : 'Bloqueado'}</div>
-            </div>
-            ${f.id === state.forestId ? '<div style="color: var(--gold-bright); font-size: 0.7rem; font-weight: 700;">ACTUAL</div>' : ''}
-          </div>
+    if (type === 'trees') {
+      body.innerHTML = `
+        <p style="color: var(--mist); font-size: 0.78rem; margin-bottom: 1rem; line-height: 1.5;">
+          Comprá árboles con tu WOOD farmeado. Cada árbol da diferente cantidad de WOOD por tap.
+        </p>
+        <div class="item-grid">
+          ${CONFIG.TREES.map(t => {
+            const owned = state.ownedTrees.includes(t.id);
+            const active = state.activeTree === t.id;
+            const canBuy = !owned && state.pending >= t.price;
+            return `
+              <div class="item-card ${active ? 'active' : ''} ${!owned && !canBuy ? 'locked' : ''}">
+                ${active ? '<div class="item-badge-active">EQUIPADO</div>' : ''}
+                <div class="item-img-wrap">
+                  <img src="${ASSETS_BASE}/${t.img}" alt="${t.name}" loading="lazy" />
+                </div>
+                <span class="item-rarity ${t.rarity}">${rarityLabel(t.rarity)}</span>
+                <div class="item-name">${t.name}</div>
+                <div class="item-effect">+${t.woodTap} WOOD por tap</div>
+                <button class="item-btn ${active ? 'equipped' : ''}" data-buy-tree="${t.id}" ${(!owned && !canBuy) ? 'disabled' : ''}>
+                  ${active ? '✓ ACTIVO' : owned ? 'EQUIPAR' : (t.price === 0 ? 'GRATIS' : priceLabel(t))}
+                </button>
+              </div>`;
+          }).join('')}
         </div>
-      `).join('');
+      `;
+      setTimeout(() => {
+        document.querySelectorAll('[data-buy-tree]').forEach(btn => {
+          if (btn.disabled) return;
+          btn.onclick = () => buyTree(parseInt(btn.dataset.buyTree));
+        });
+      }, 0);
+    }
+    else if (type === 'upgrades') {
+      body.innerHTML = `
+        <p style="color: var(--mist); font-size: 0.78rem; margin-bottom: 1rem; line-height: 1.5;">
+          Mejoras permanentes para tu farm. Las básicas se compran con WOOD, las avanzadas con BRZL/WLD.
+        </p>
+        <div class="item-grid">
+          ${CONFIG.UPGRADES.map(u => {
+            const owned = state.ownedUpgrades.includes(u.id);
+            let canBuy = !owned;
+            if (canBuy && u.currency === 'wood') canBuy = state.pending >= u.price;
+            return `
+              <div class="item-card ${owned ? 'active' : ''} ${!owned && u.currency === 'wood' && !canBuy ? 'locked' : ''}">
+                ${owned ? '<div class="item-badge-active">ACTIVA</div>' : ''}
+                <div class="item-img-wrap">
+                  <img src="${ASSETS_BASE}/${u.img}" alt="${u.name}" loading="lazy" />
+                </div>
+                <span class="item-rarity ${u.rarity}">${rarityLabel(u.rarity)}</span>
+                <div class="item-name">${u.name}</div>
+                <div class="item-effect">${u.effect}</div>
+                <button class="item-btn ${u.currency} ${owned ? 'equipped' : ''}" data-buy-up="${u.id}" ${owned || (u.currency === 'wood' && !canBuy) ? 'disabled' : ''}>
+                  ${owned ? '✓ ACTIVA' : (u.price === 0 ? 'GRATIS' : priceLabel(u))}
+                </button>
+              </div>`;
+          }).join('')}
+        </div>
+      `;
+      setTimeout(() => {
+        document.querySelectorAll('[data-buy-up]').forEach(btn => {
+          if (btn.disabled) return;
+          btn.onclick = () => buyUpgrade(parseInt(btn.dataset.buyUp));
+        });
+      }, 0);
     }
     else if (type === 'tier') {
       const current = state.tier;
@@ -845,24 +1242,20 @@
               ${current === t.id ? '<div style="color: var(--gold-bright); font-size: 0.7rem; font-weight: 700;">ACTIVA</div>' : ''}
             </div>
             <div class="tier-actions">
-              <button class="tier-btn" data-buy="wld" data-tier="${t.id}" ${current >= t.id ? 'disabled' : ''}>
-                ${t.wld} WLD
-              </button>
-              <button class="tier-btn brzl" data-buy="brzl" data-tier="${t.id}" ${current >= t.id ? 'disabled' : ''}>
-                ${fmt(t.brzl)} BRZL
-              </button>
+              <button class="tier-btn wld" data-buy-tier-wld="${t.id}" ${current >= t.id ? 'disabled' : ''}>${t.wld} WLD</button>
+              <button class="tier-btn brzl" data-buy-tier-brzl="${t.id}" ${current >= t.id ? 'disabled' : ''}>${fmt(t.brzl)} BRZL</button>
             </div>
           </div>
         `).join('')}
       `;
       setTimeout(() => {
-        document.querySelectorAll('[data-buy]').forEach(btn => {
+        document.querySelectorAll('[data-buy-tier-wld]').forEach(btn => {
           if (btn.disabled) return;
-          btn.onclick = () => {
-            const tierId = parseInt(btn.dataset.tier);
-            const payWith = btn.dataset.buy;
-            buyMembership(tierId, payWith);
-          };
+          btn.onclick = () => buyMembership(parseInt(btn.dataset.buyTierWld), 'wld');
+        });
+        document.querySelectorAll('[data-buy-tier-brzl]').forEach(btn => {
+          if (btn.disabled) return;
+          btn.onclick = () => buyMembership(parseInt(btn.dataset.buyTierBrzl), 'brzl');
         });
       }, 0);
     }
@@ -873,13 +1266,13 @@
           <div class="modal-value">${fmt(state.pending)} WOOD</div>
         </div>
         <div class="modal-section">
-          <div class="modal-label">Mínimo requerido: ${CONFIG.CLAIM_MIN} WOOD</div>
+          <div class="modal-label">Mínimo: ${CONFIG.CLAIM_MIN} WOOD</div>
         </div>
         <button class="btn-primary" id="btn-do-claim" ${state.pending < CONFIG.CLAIM_MIN ? 'disabled' : ''}>
           ${state.pending < CONFIG.CLAIM_MIN ? 'Necesitás más WOOD' : `Reclamar ${fmt(state.pending)} WOOD`}
         </button>
         <p style="color: var(--mist); font-size: 0.75rem; margin-top: 1rem; text-align: center;">
-          ⚠️ El claim on-chain requiere backend de firma anti-bot. Próximamente activo.
+          ⚠️ El claim on-chain requiere backend de firma (próximamente).
         </p>
       `;
       setTimeout(() => {
@@ -888,67 +1281,81 @@
       }, 0);
     }
     else if (type === 'stats') {
+      const tree = CONFIG.TREES.find(t => t.id === state.activeTree);
       body.innerHTML = `
         <div class="modal-section">
           <div class="modal-label">Wallet</div>
-          <div style="font-family: monospace; font-size: 0.8rem; word-break: break-all; color: var(--cream);">${state.address || '—'}</div>
+          <div style="font-family: monospace; font-size: 0.78rem; word-break: break-all; color: var(--cream);">${state.address || '—'}</div>
         </div>
         <div class="modal-section">
           <div class="modal-label">Bosque actual</div>
-          <div class="modal-value">${getCurrentForest().name} (x${getCurrentForest().mult})</div>
+          <div class="modal-value">${getCurrentForest().name}</div>
+        </div>
+        <div class="modal-section">
+          <div class="modal-label">Árbol equipado</div>
+          <div class="modal-value">${tree ? tree.name : '—'} (+${getWoodPerTap()} WOOD/tap)</div>
         </div>
         <div class="modal-section">
           <div class="modal-label">Membresía</div>
           <div class="modal-value">${state.tier === 0 ? 'Ninguna' : CONFIG.TIERS[state.tier - 1].name}</div>
         </div>
         <div class="modal-section">
+          <div class="modal-label">Árboles desbloqueados</div>
+          <div class="modal-value">${state.ownedTrees.length} / ${CONFIG.TREES.length}</div>
+        </div>
+        <div class="modal-section">
+          <div class="modal-label">Mejoras activas</div>
+          <div class="modal-value">${state.ownedUpgrades.length} / ${CONFIG.UPGRADES.length}</div>
+        </div>
+        <div class="modal-section">
           <div class="modal-label">Total farmeado</div>
           <div class="modal-value">${fmt(state.totalFarmed)} WOOD</div>
         </div>
         <div class="modal-section">
-          <div class="modal-label">Pendiente de claim</div>
-          <div class="modal-value">${fmt(state.pending)} WOOD</div>
+          <div class="modal-label">Energía máxima</div>
+          <div class="modal-value">${getEnergyMax()}</div>
+        </div>
+        <div class="modal-section">
+          <div class="modal-label">Producción idle</div>
+          <div class="modal-value">${fmt(getIdleRate())} WOOD/seg</div>
         </div>
       `;
     }
-
     $('modal-backdrop').classList.add('show');
   }
   function closeModal() { $('modal-backdrop').classList.remove('show'); }
 
+  // ============ CONNECT ============
   async function connectWallet() {
     let tries = 0;
     while (typeof window._miniKitReady === 'undefined' && tries < 30) {
       await new Promise(r => setTimeout(r, 100));
       tries++;
     }
-
     const mk = window._MiniKit;
     if (!mk || !mk.isInstalled || !mk.isInstalled()) {
       showToast('Abrí esta app desde World App', 'error');
       $('warning-box').innerHTML = `
         <div class="browser-warning">
           ⚠️ Esta Mini App debe abrirse desde <b>World App</b>.<br><br>
-          Andá a World App → Apps → buscá "Barzola Wood Farm" y abrila desde ahí.
+          Andá a World App → Apps → buscá "Barzola Wood Farm".
         </div>`;
       return;
     }
-
     try {
       showToast('Conectando wallet...', '');
       const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
       const nonce = Array.from({length: 16}, () => chars[Math.floor(Math.random() * chars.length)]).join('');
-
       const result = await mk.walletAuth({ nonce, statement: 'Bienvenido a Wood Farm 🌲' });
       const payload = result?.finalPayload || result?.data || result;
       state.address = payload.address || mk.walletAddress;
-
       if (!state.address) throw new Error('No address');
 
       showToast('✓ Conectado', 'success');
       await loadUser(state.address);
       updateWalletUI();
       updateForestUI();
+      updateTreeImage();
       updateGameUI();
       switchToGame();
     } catch (e) {
@@ -956,12 +1363,12 @@
       showToast('Error conectando: ' + (e.message || '').slice(0, 30), 'error');
     }
   }
-
   function switchToGame() {
     $('login-screen').classList.remove('show');
     $('game-screen').classList.add('show');
   }
 
+  // ============ INIT ============
   function initApp() {
     try {
       setTimeout(() => {
