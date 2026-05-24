@@ -1,31 +1,12 @@
 // ============================================
 //  WOOD FARM — Backend Claim Signer
 //  Endpoint: POST /api/sign-claim
-//
-//  Body esperado:
-//  {
-//    "address": "0x...",        // wallet del user
-//    "amount": 100,              // BRZL a reclamar (entero)
-//    "worldIdProof": {...}       // proof de World ID (opcional pero recomendado)
-//  }
-//
-//  Respuesta exitosa:
-//  {
-//    "ok": true,
-//    "amount": "100000000000000000000",  // wei
-//    "deadline": 1234567890,
-//    "nonce": "0x...",
-//    "signature": "0x..."
-//  }
-//
-//  Respuesta de error:
-//  { "ok": false, "error": "RAZÓN" }
+//  v1.1 — World ID DESACTIVADO temporalmente
 // ============================================
 
 const { ethers } = require('ethers');
 const admin = require('firebase-admin');
 
-// ============ CONFIG ============
 const CONFIG = {
   CHAIN_ID: 480,
   WOOD_SWAP: '0x26b8c5725391D02390b948ff929cf506aE492eDb',
@@ -35,26 +16,18 @@ const CONFIG = {
   FIREBASE_CLIENT_EMAIL: process.env.FIREBASE_CLIENT_EMAIL,
   FIREBASE_PRIVATE_KEY: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n'),
 
-  // Reglas de negocio
-  COOLDOWN_SEC: 6 * 60 * 60,           // 6 horas
-  LOCK_SEC: 24 * 60 * 60,              // 24 horas
-  GLOBAL_DAILY_CAP_BRZL: 10000,        // cap total diario
-  DEADLINE_SEC: 5 * 60,                // firma válida 5 min
+  COOLDOWN_SEC: 6 * 60 * 60,
+  LOCK_SEC: 24 * 60 * 60,
+  GLOBAL_DAILY_CAP_BRZL: 10000,
+  DEADLINE_SEC: 5 * 60,
 
-  // Límites por tier (BRZL/día)
   TIER_LIMITS: {
-    0: 50,     // Free
-    1: 100,    // Bronze
-    2: 200,    // Silver
-    3: 500,    // Gold
-    4: 1000    // Diamond
+    0: 50, 1: 100, 2: 200, 3: 500, 4: 1000
   },
 
-  // Ratio: 100 WOOD = 1 BRZL
   WOOD_PER_BRZL: 100
 };
 
-// ============ FIREBASE INIT ============
 if (!admin.apps.length) {
   try {
     admin.initializeApp({
@@ -70,7 +43,6 @@ if (!admin.apps.length) {
 }
 const db = admin.firestore();
 
-// ============ HELPERS ============
 function todayKey() {
   const d = new Date();
   return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}-${String(d.getUTCDate()).padStart(2, '0')}`;
@@ -86,9 +58,7 @@ function randomNonce() {
   ).join('');
 }
 
-// ============ MAIN HANDLER ============
 module.exports = async function handler(req, res) {
-  // CORS
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
@@ -99,9 +69,8 @@ module.exports = async function handler(req, res) {
   }
 
   try {
-    const { address, amount, worldIdProof } = req.body || {};
+    const { address, amount } = req.body || {};
 
-    // ============ VALIDACIONES BÁSICAS ============
     if (!address || !ethers.isAddress(address)) {
       return res.status(400).json({ ok: false, error: 'INVALID_ADDRESS' });
     }
@@ -113,8 +82,6 @@ module.exports = async function handler(req, res) {
     }
 
     const userAddr = address.toLowerCase();
-
-    // ============ CARGAR USER DE FIREBASE ============
     const userRef = db.collection('users').doc(userAddr);
     const userSnap = await userRef.get();
 
@@ -124,19 +91,19 @@ module.exports = async function handler(req, res) {
 
     const user = userSnap.data();
 
-    // ============ VALIDACIÓN: WORLD ID ============
-    if (!user.worldIdVerified) {
-      return res.status(403).json({ ok: false, error: 'WORLD_ID_REQUIRED' });
-    }
+    // ============ VALIDACIÓN: WORLD ID (DESACTIVADA TEMP) ============
+    // if (!user.worldIdVerified) {
+    //   return res.status(403).json({ ok: false, error: 'WORLD_ID_REQUIRED' });
+    // }
 
     // ============ VALIDACIÓN: WOOD DISPONIBLE ============
     const woodNeeded = amount * CONFIG.WOOD_PER_BRZL;
-    if ((user.claimable || 0) < woodNeeded) {
+    if ((user.pending || 0) < woodNeeded) {
       return res.status(400).json({
         ok: false,
         error: 'INSUFFICIENT_WOOD',
         needed: woodNeeded,
-        have: user.claimable || 0
+        have: user.pending || 0
       });
     }
 
@@ -168,17 +135,6 @@ module.exports = async function handler(req, res) {
       });
     }
 
-    // ============ VALIDACIÓN: LOCK 24H ============
-    // El WOOD debe haber sido farmeado hace +24h
-    const lockedUntil = user.lockedUntil || 0;
-    if (lockedUntil > nowSec()) {
-      return res.status(429).json({
-        ok: false,
-        error: 'WOOD_LOCKED',
-        unlockAt: lockedUntil
-      });
-    }
-
     // ============ VALIDACIÓN: CAP GLOBAL DEL DÍA ============
     const globalRef = db.collection('global').doc('treasury');
     const globalSnap = await globalRef.get();
@@ -201,8 +157,6 @@ module.exports = async function handler(req, res) {
     const deadline = nowSec() + CONFIG.DEADLINE_SEC;
     const nonce = randomNonce();
 
-    // Mensaje que el contrato verificará:
-    // keccak256(abi.encodePacked("WOODSWAP_CLAIM", contract, chainId, user, amount, deadline, nonce))
     const messageHash = ethers.solidityPackedKeccak256(
       ['string', 'address', 'uint256', 'address', 'uint256', 'uint256', 'bytes32'],
       [
@@ -216,7 +170,6 @@ module.exports = async function handler(req, res) {
       ]
     );
 
-    // Firmar con prefix EIP-191
     const signature = await wallet.signMessage(ethers.getBytes(messageHash));
 
     // ============ ACTUALIZAR FIREBASE (atómico) ============
@@ -224,14 +177,11 @@ module.exports = async function handler(req, res) {
       const u = await tx.get(userRef);
       const uData = u.data();
 
-      // Descontar WOOD claimable
-      const newClaimable = (uData.claimable || 0) - woodNeeded;
+      const newPending = (uData.pending || 0) - woodNeeded;
 
-      // Actualizar daily claim del user
       const newDaily = { ...(uData.dailyClaim || {}) };
       newDaily[today] = (newDaily[today] || 0) + amount;
 
-      // Limpiar días viejos (>7 días) para no llenar Firestore
       const cutoff = new Date();
       cutoff.setDate(cutoff.getDate() - 7);
       const cutoffKey = `${cutoff.getUTCFullYear()}-${String(cutoff.getUTCMonth() + 1).padStart(2, '0')}-${String(cutoff.getUTCDate()).padStart(2, '0')}`;
@@ -240,13 +190,12 @@ module.exports = async function handler(req, res) {
       });
 
       tx.update(userRef, {
-        claimable: newClaimable,
+        pending: newPending,
         dailyClaim: newDaily,
         lastClaimAt: nowSec(),
         totalClaimed: (uData.totalClaimed || 0) + amount
       });
 
-      // Actualizar global daily
       const g = await tx.get(globalRef);
       const gData = g.exists ? g.data() : { dailyOut: {} };
       const gDaily = { ...(gData.dailyOut || {}) };
@@ -262,7 +211,6 @@ module.exports = async function handler(req, res) {
       }, { merge: true });
     });
 
-    // ============ DEVOLVER FIRMA ============
     return res.status(200).json({
       ok: true,
       amount: amountWei.toString(),
