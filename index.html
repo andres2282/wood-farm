@@ -186,7 +186,12 @@
     font-size: 0.85rem; font-weight: 500;
     color: var(--gold); margin-left: 0.3rem;
   }
-  .balance-onchain { font-size: 0.65rem; color: var(--mist); margin-top: 0.2rem; }
+  .balance-onchain {
+    font-size: 0.62rem; color: var(--mist); margin-top: 0.3rem;
+    display: flex; justify-content: center; align-items: center;
+    flex-wrap: wrap; gap: 0.15rem;
+  }
+  .balance-onchain span { white-space: nowrap; }
 
   /* SCENE */
   .forest-scene {
@@ -222,26 +227,24 @@
 
   /* TREE TAP */
   .tree-container {
-    position: relative; width: 260px; height: 260px;
+    position: relative;
+    width: 100%; height: 100%;
     z-index: 5; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
   }
   .tree-image-wrap {
-    position: absolute; inset: 0;
-    border-radius: 50%;
-    background: radial-gradient(circle at 50% 40%, rgba(106, 176, 76, 0.3), rgba(31, 74, 46, 0.7));
-    border: 3px solid rgba(212, 160, 76, 0.5);
-    box-shadow: inset 0 0 40px rgba(0,0,0,0.4), 0 0 60px rgba(212, 160, 76, 0.2), 0 8px 32px rgba(0,0,0,0.6);
+    position: relative;
+    width: 90%; height: 90%;
     display: flex; align-items: center; justify-content: center;
-    overflow: hidden;
     transition: transform 0.1s ease;
   }
   .tree-container:active .tree-image-wrap {
-    transform: scale(0.93);
-    box-shadow: inset 0 0 60px rgba(0,0,0,0.6), 0 0 80px rgba(240, 200, 120, 0.5);
+    transform: scale(0.95);
+    filter: drop-shadow(0 0 30px rgba(240, 200, 120, 0.7));
   }
   .tree-image {
-    width: 85%; height: 85%; object-fit: contain;
-    filter: drop-shadow(0 4px 12px rgba(0,0,0,0.6));
+    width: 100%; height: 100%; object-fit: contain;
+    filter: drop-shadow(0 8px 20px rgba(0,0,0,0.7));
     animation: sway 4s ease-in-out infinite;
     pointer-events: none;
   }
@@ -572,7 +575,13 @@
           <span class="balance-amount" id="balance-pending">0</span>
           <span class="balance-unit">WOOD</span>
         </div>
-        <div class="balance-onchain">On-chain: <span id="balance-onchain">0</span> WOOD</div>
+        <div class="balance-onchain" id="balances-row">
+          <span style="color: var(--gold-bright);">💰 <span id="bal-wld">—</span> WLD</span>
+          &nbsp;·&nbsp;
+          <span style="color: var(--gold-bright);">🥩 <span id="bal-brzl">—</span> BRZL</span>
+          &nbsp;·&nbsp;
+          <span style="color: var(--gold-bright);">🌲 <span id="bal-wood">—</span> WOOD</span>
+        </div>
       </div>
     </header>
 
@@ -953,6 +962,49 @@
       $('wallet-mini').textContent = short;
     }
   }
+
+  // Lee balance de un ERC20 vía RPC público de World Chain
+  async function readErc20Balance(tokenAddr, holder) {
+    try {
+      // balanceOf(address) selector: 0x70a08231
+      const data = '0x70a08231' + holder.slice(2).padStart(64, '0').toLowerCase();
+      const res = await fetch('https://worldchain-mainnet.g.alchemy.com/public', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          jsonrpc: '2.0', id: 1, method: 'eth_call',
+          params: [{ to: tokenAddr, data }, 'latest']
+        })
+      });
+      const json = await res.json();
+      if (!json.result || json.result === '0x') return 0n;
+      return BigInt(json.result);
+    } catch (e) {
+      console.error('readBalance error:', e);
+      return 0n;
+    }
+  }
+
+  async function loadBalances() {
+    if (!state.address) return;
+    try {
+      const [wld, brzl, wood] = await Promise.all([
+        readErc20Balance(CONFIG.WLD_TOKEN, state.address),
+        readErc20Balance(CONFIG.BRZL_TOKEN, state.address),
+        readErc20Balance(CONFIG.WOOD_TOKEN, state.address)
+      ]);
+      const toNum = (b) => Number(b / 10n ** 16n) / 100; // 2 decimales
+      $('bal-wld').textContent = toNum(wld).toFixed(2);
+      $('bal-brzl').textContent = fmt(toNum(brzl));
+      $('bal-wood').textContent = fmt(toNum(wood));
+      state.onchain = Number(wood / 10n ** 18n);
+    } catch (e) {
+      console.error('loadBalances:', e);
+    }
+  }
+
+  // Refrescar balances cada 30 segundos
+  setInterval(() => { if (state.address) loadBalances(); }, 30000);
 
   // Loop principal: regen + idle
   setInterval(() => {
@@ -1358,6 +1410,7 @@
       updateTreeImage();
       updateGameUI();
       switchToGame();
+      loadBalances(); // cargar balances de tokens
     } catch (e) {
       console.error('connect error:', e);
       showToast('Error conectando: ' + (e.message || '').slice(0, 30), 'error');
