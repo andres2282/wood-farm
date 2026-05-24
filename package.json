@@ -1,0 +1,10 @@
+{
+  "name": "wood-farm",
+  "version": "1.0.0",
+  "private": true,
+  "type": "commonjs",
+  "dependencies": {
+    "ethers": "^6.7.0",
+    "firebase-admin": "^12.0.0"
+  }
+}
