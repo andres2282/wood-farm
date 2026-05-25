@@ -25,7 +25,7 @@ const CONFIG = {
     0: 50, 1: 100, 2: 200, 3: 500, 4: 1000
   },
 
-  WOOD_PER_BRZL: 100
+  WOOD_PER_BRZL: 1000
 };
 
 if (!admin.apps.length) {
