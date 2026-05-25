@@ -1,7 +1,7 @@
 // ============================================
 //  WOOD FARM — Backend Claim Signer
 //  Endpoint: POST /api/sign-claim
-//  v1.1 — World ID DESACTIVADO temporalmente
+//  v1.2 — Bug Firestore transaction arreglado
 // ============================================
 
 const { ethers } = require('ethers');
@@ -173,9 +173,15 @@ module.exports = async function handler(req, res) {
     const signature = await wallet.signMessage(ethers.getBytes(messageHash));
 
     // ============ ACTUALIZAR FIREBASE (atómico) ============
+    // FIX v1.2: Firestore requiere TODAS las lecturas ANTES de las escrituras
     await db.runTransaction(async (tx) => {
+      // 1. PRIMERO todas las lecturas
       const u = await tx.get(userRef);
+      const g = await tx.get(globalRef);
+
+      // 2. DESPUÉS preparar los datos
       const uData = u.data();
+      const gData = g.exists ? g.data() : { dailyOut: {}, totalOut: 0 };
 
       const newPending = (uData.pending || 0) - woodNeeded;
 
@@ -189,19 +195,18 @@ module.exports = async function handler(req, res) {
         if (k < cutoffKey) delete newDaily[k];
       });
 
+      const gDaily = { ...(gData.dailyOut || {}) };
+      gDaily[today] = (gDaily[today] || 0) + amount;
+      Object.keys(gDaily).forEach(k => {
+        if (k < cutoffKey) delete gDaily[k];
+      });
+
+      // 3. AHORA todas las escrituras
       tx.update(userRef, {
         pending: newPending,
         dailyClaim: newDaily,
         lastClaimAt: nowSec(),
         totalClaimed: (uData.totalClaimed || 0) + amount
-      });
-
-      const g = await tx.get(globalRef);
-      const gData = g.exists ? g.data() : { dailyOut: {} };
-      const gDaily = { ...(gData.dailyOut || {}) };
-      gDaily[today] = (gDaily[today] || 0) + amount;
-      Object.keys(gDaily).forEach(k => {
-        if (k < cutoffKey) delete gDaily[k];
       });
 
       tx.set(globalRef, {
