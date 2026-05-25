@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-<meta name="theme-color" content="#0a1f14" />
+<meta name="theme-color" content="#0a0a0a" />
 <title>Wood Farm · Barzola Legacy</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -13,38 +13,46 @@
   html, body { height: 100%; overflow: hidden; }
   body {
     font-family: 'Inter', sans-serif;
-    color: #f4f1de;
-    background: #0a1f14;
+    color: var(--cream);
+    background: #0a0a0a;
     user-select: none;
     -webkit-tap-highlight-color: transparent;
     overscroll-behavior: none;
   }
   button { font-family: inherit; cursor: pointer; border: none; background: none; color: inherit; }
   :root {
-    --bg-deep: #0a1f14;
-    --bg-mid: #16321f;
-    --bg-light: #1f4a2e;
-    --gold: #d4a04c;
-    --gold-bright: #f0c878;
-    --gold-dim: #8c6a32;
-    --cream: #f4f1de;
-    --mist: #c8d4c4;
-    --danger: #c44;
-    --success: #6ab04c;
-    --rarity-common: #8a8a8a;
-    --rarity-uncommon: #4caf50;
-    --rarity-rare: #2196f3;
-    --rarity-epic: #9c27b0;
-    --rarity-legendary: #ff9800;
-    --rarity-mythic: #e91e63;
-    --rarity-divine: #f44336;
+    --bg-deep: #0a0a0a;
+    --bg-mid: #1a0e0a;
+    --bg-light: #2d1810;
+    --gold: #fbbf24;
+    --gold-bright: #fde047;
+    --gold-dim: #b08418;
+    --red: #dc2626;
+    --red-bright: #ef4444;
+    --red-dim: #991b1b;
+    --green: #16a34a;
+    --green-bright: #22c55e;
+    --green-dim: #166534;
+    --brown: #78350f;
+    --brown-light: #a16207;
+    --cream: #fef3c7;
+    --mist: #d6d3d1;
+    --danger: #dc2626;
+    --success: #16a34a;
+    --rarity-common: #78716c;
+    --rarity-uncommon: #16a34a;
+    --rarity-rare: #2563eb;
+    --rarity-epic: #9333ea;
+    --rarity-legendary: #f59e0b;
+    --rarity-mythic: #ec4899;
+    --rarity-divine: #dc2626;
   }
   #app { position: relative; width: 100vw; height: 100vh; height: 100dvh; overflow: hidden; }
 
   /* LOADING */
   #loading-screen {
     position: fixed; inset: 0;
-    background: radial-gradient(ellipse at center, #1f4a2e 0%, #0a1f14 80%);
+    background: radial-gradient(ellipse at center, #1a0e0a 0%, #0a0a0a 80%);
     display: flex; flex-direction: column;
     align-items: center; justify-content: center;
     z-index: 1000;
@@ -76,8 +84,8 @@
   #login-screen {
     position: fixed; inset: 0;
     background:
-      radial-gradient(ellipse at top, #1f4a2e 0%, transparent 60%),
-      radial-gradient(ellipse at bottom, #0a1f14 0%, #000 100%);
+      radial-gradient(ellipse at top, rgba(220, 38, 38, 0.15) 0%, transparent 60%),
+      radial-gradient(ellipse at bottom, rgba(22, 163, 74, 0.1) 0%, #000 100%);
     display: none;
     flex-direction: column;
     align-items: center; justify-content: center;
@@ -86,29 +94,36 @@
   #login-screen.show { display: flex; }
   .login-title {
     font-family: 'Cinzel', serif; font-weight: 900;
-    font-size: 2.6rem; color: var(--gold-bright);
-    letter-spacing: 0.15em; text-align: center;
+    font-size: 3rem; color: var(--red-bright);
+    letter-spacing: 0.1em; text-align: center;
     line-height: 1; margin-bottom: 0.5rem;
-    text-shadow: 0 0 30px rgba(240, 200, 120, 0.4);
+    text-shadow:
+      0 0 20px rgba(239, 68, 68, 0.6),
+      0 0 40px rgba(220, 38, 38, 0.4),
+      2px 2px 0 #000,
+      -2px -2px 0 #000,
+      2px -2px 0 #000,
+      -2px 2px 0 #000;
   }
   .login-sub {
-    font-size: 0.8rem; color: var(--mist);
+    font-size: 0.85rem; color: var(--gold-bright);
     letter-spacing: 0.4em; text-transform: uppercase;
-    margin-bottom: 3rem;
+    margin-bottom: 3rem; font-weight: 700;
   }
   .login-card {
     width: 100%; max-width: 360px;
-    background: rgba(22, 50, 31, 0.7);
+    background: rgba(26, 14, 10, 0.85);
     backdrop-filter: blur(20px);
-    border: 1px solid rgba(212, 160, 76, 0.2);
+    border: 2px solid rgba(220, 38, 38, 0.3);
     border-radius: 16px;
     padding: 2rem 1.5rem;
-    box-shadow: 0 8px 32px rgba(0,0,0,0.6);
+    box-shadow: 0 8px 32px rgba(0,0,0,0.8), 0 0 40px rgba(220, 38, 38, 0.1);
   }
   .login-card h2 {
-    font-family: 'Cinzel', serif; font-size: 1.1rem;
+    font-family: 'Cinzel', serif; font-size: 1.3rem;
     color: var(--gold-bright); margin-bottom: 0.5rem;
-    text-align: center;
+    text-align: center; font-weight: 900;
+    text-shadow: 0 0 10px rgba(251, 191, 36, 0.4);
   }
   .login-card p {
     font-size: 0.85rem; color: var(--mist);
@@ -117,16 +132,17 @@
   }
   .btn-primary {
     width: 100%; padding: 1rem;
-    background: linear-gradient(135deg, var(--gold-bright), var(--gold));
-    color: #1a1009; font-weight: 700;
-    font-size: 0.9rem; border-radius: 12px;
-    letter-spacing: 0.05em; text-transform: uppercase;
+    background: linear-gradient(135deg, var(--gold-bright), var(--red));
+    color: #000; font-weight: 900;
+    font-size: 0.95rem; border-radius: 12px;
+    letter-spacing: 0.08em; text-transform: uppercase;
     transition: transform 0.15s, box-shadow 0.2s;
-    box-shadow: 0 4px 16px rgba(212, 160, 76, 0.3);
+    box-shadow: 0 4px 16px rgba(220, 38, 38, 0.4), inset 0 1px 0 rgba(255,255,255,0.3);
     margin-bottom: 0.6rem;
+    border: 2px solid rgba(0,0,0,0.3);
   }
-  .btn-primary:active { transform: scale(0.97); }
-  .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+  .btn-primary:active { transform: scale(0.96); box-shadow: 0 2px 8px rgba(220, 38, 38, 0.6); }
+  .btn-primary:disabled { opacity: 0.4; cursor: not-allowed; filter: grayscale(0.6); }
   .browser-warning {
     background: rgba(204, 68, 68, 0.15);
     border: 1px solid var(--danger);
@@ -156,35 +172,41 @@
   }
   .level-badge {
     display: flex; align-items: center; gap: 0.4rem;
-    padding: 0.35rem 0.7rem;
-    background: rgba(212, 160, 76, 0.15);
-    border: 1px solid rgba(212, 160, 76, 0.4);
+    padding: 0.4rem 0.8rem;
+    background: linear-gradient(135deg, rgba(220, 38, 38, 0.25), rgba(251, 191, 36, 0.15));
+    border: 1px solid var(--gold);
     border-radius: 999px;
-    font-size: 0.7rem; font-weight: 600;
+    font-size: 0.7rem; font-weight: 800;
     color: var(--gold-bright); letter-spacing: 0.05em;
+    box-shadow: 0 0 12px rgba(251, 191, 36, 0.2);
   }
   .wallet-mini {
     font-size: 0.65rem; color: var(--mist);
     font-family: 'Inter', monospace;
     padding: 0.35rem 0.6rem;
-    background: rgba(0,0,0,0.3); border-radius: 999px;
+    background: rgba(0,0,0,0.5);
+    border: 1px solid rgba(220, 38, 38, 0.3);
+    border-radius: 999px;
   }
   .balance-display { text-align: center; margin-bottom: 0.3rem; }
   .balance-label {
     font-size: 0.6rem; text-transform: uppercase;
-    letter-spacing: 0.3em; color: var(--mist);
-    margin-bottom: 0.15rem;
+    letter-spacing: 0.3em; color: var(--gold);
+    margin-bottom: 0.15rem; font-weight: 700;
   }
   .balance-amount {
-    font-family: 'Cinzel', serif; font-weight: 700;
-    font-size: 1.9rem; color: var(--gold-bright);
+    font-family: 'Cinzel', serif; font-weight: 900;
+    font-size: 2.1rem; color: var(--gold-bright);
     letter-spacing: 0.02em; line-height: 1;
-    text-shadow: 0 0 20px rgba(240, 200, 120, 0.4);
+    text-shadow:
+      0 0 20px rgba(251, 191, 36, 0.5),
+      0 0 30px rgba(220, 38, 38, 0.3),
+      2px 2px 0 #000;
   }
   .balance-unit {
     font-family: 'Inter', sans-serif;
-    font-size: 0.85rem; font-weight: 500;
-    color: var(--gold); margin-left: 0.3rem;
+    font-size: 0.85rem; font-weight: 800;
+    color: var(--green-bright); margin-left: 0.3rem;
   }
   .balance-onchain {
     font-size: 0.62rem; color: var(--mist); margin-top: 0.3rem;
@@ -203,20 +225,20 @@
     background-size: cover; background-position: center;
     transition: opacity 1s ease;
   }
-  .forest-bg.forest-1 { background: radial-gradient(ellipse at 30% 80%, rgba(31, 74, 46, 0.6), transparent 60%), radial-gradient(ellipse at 70% 20%, rgba(212, 160, 76, 0.15), transparent 50%), linear-gradient(180deg, #0a1f14 0%, #1f4a2e 50%, #16321f 100%); }
-  .forest-bg.forest-2 { background: radial-gradient(ellipse at 30% 80%, rgba(180, 90, 30, 0.4), transparent 60%), radial-gradient(ellipse at 70% 20%, rgba(240, 180, 80, 0.2), transparent 50%), linear-gradient(180deg, #2a1a0a 0%, #5a3a1a 50%, #2a1a0a 100%); }
-  .forest-bg.forest-3 { background: radial-gradient(ellipse at 30% 80%, rgba(120, 180, 220, 0.3), transparent 60%), radial-gradient(ellipse at 70% 20%, rgba(220, 240, 255, 0.2), transparent 50%), linear-gradient(180deg, #1a2a3a 0%, #4a6a8a 50%, #2a3a4a 100%); }
-  .forest-bg.forest-4 { background: radial-gradient(ellipse at 30% 80%, rgba(130, 80, 200, 0.4), transparent 60%), radial-gradient(ellipse at 70% 20%, rgba(180, 120, 240, 0.25), transparent 50%), linear-gradient(180deg, #1a0a2a 0%, #4a2a6a 50%, #2a1a3a 100%); }
-  .forest-bg.forest-5 { background: radial-gradient(ellipse at 50% 60%, rgba(240, 200, 120, 0.4), transparent 60%), radial-gradient(ellipse at 50% 100%, rgba(212, 160, 76, 0.4), transparent 50%), linear-gradient(180deg, #3a2a0a 0%, #6a5a1a 50%, #3a2a0a 100%); }
-  .forest-bg.forest-6 { background: radial-gradient(ellipse at 30% 80%, rgba(120, 220, 200, 0.4), transparent 60%), radial-gradient(ellipse at 70% 20%, rgba(200, 240, 230, 0.25), transparent 50%), linear-gradient(180deg, #0a2a2a 0%, #1a5a5a 50%, #0a3a3a 100%); }
-  .forest-bg.forest-7 { background: radial-gradient(ellipse at 50% 50%, rgba(255, 100, 100, 0.3), transparent 60%), radial-gradient(ellipse at 70% 20%, rgba(255, 200, 100, 0.3), transparent 50%), linear-gradient(180deg, #2a0a0a 0%, #6a1a1a 50%, #3a0a0a 100%); }
-  .forest-bg.forest-8 { background: radial-gradient(ellipse at 30% 80%, rgba(100, 200, 100, 0.5), transparent 60%), radial-gradient(ellipse at 70% 20%, rgba(200, 255, 150, 0.3), transparent 50%), linear-gradient(180deg, #0a3a0a 0%, #1a6a1a 50%, #0a4a0a 100%); }
-  .forest-bg.forest-9 { background: radial-gradient(ellipse at 30% 80%, rgba(220, 220, 255, 0.5), transparent 60%), radial-gradient(ellipse at 70% 20%, rgba(240, 240, 255, 0.4), transparent 50%), linear-gradient(180deg, #2a2a5a 0%, #5a5a8a 50%, #3a3a6a 100%); }
+  .forest-bg.forest-1 { background: radial-gradient(ellipse at 30% 80%, rgba(22, 163, 74, 0.4), transparent 60%), radial-gradient(ellipse at 70% 20%, rgba(251, 191, 36, 0.15), transparent 50%), linear-gradient(180deg, #0a0a0a 0%, #1a0e0a 50%, #0a0a0a 100%); }
+  .forest-bg.forest-2 { background: radial-gradient(ellipse at 30% 80%, rgba(220, 38, 38, 0.35), transparent 60%), radial-gradient(ellipse at 70% 20%, rgba(251, 191, 36, 0.2), transparent 50%), linear-gradient(180deg, #1a0a0a 0%, #2d1810 50%, #1a0a0a 100%); }
+  .forest-bg.forest-3 { background: radial-gradient(ellipse at 30% 80%, rgba(120, 53, 15, 0.5), transparent 60%), radial-gradient(ellipse at 70% 20%, rgba(252, 211, 77, 0.2), transparent 50%), linear-gradient(180deg, #0a0a0a 0%, #2d1810 50%, #0a0a0a 100%); }
+  .forest-bg.forest-4 { background: radial-gradient(ellipse at 30% 80%, rgba(147, 51, 234, 0.3), transparent 60%), radial-gradient(ellipse at 70% 20%, rgba(220, 38, 38, 0.2), transparent 50%), linear-gradient(180deg, #0a0a0a 0%, #1a0a14 50%, #0a0a0a 100%); }
+  .forest-bg.forest-5 { background: radial-gradient(ellipse at 50% 60%, rgba(251, 191, 36, 0.4), transparent 60%), radial-gradient(ellipse at 50% 100%, rgba(245, 158, 11, 0.4), transparent 50%), linear-gradient(180deg, #1a0e0a 0%, #2d2010 50%, #1a0e0a 100%); }
+  .forest-bg.forest-6 { background: radial-gradient(ellipse at 30% 80%, rgba(34, 197, 94, 0.45), transparent 60%), radial-gradient(ellipse at 70% 20%, rgba(251, 191, 36, 0.25), transparent 50%), linear-gradient(180deg, #0a0a0a 0%, #0a1a0a 50%, #0a0a0a 100%); }
+  .forest-bg.forest-7 { background: radial-gradient(ellipse at 50% 50%, rgba(239, 68, 68, 0.4), transparent 60%), radial-gradient(ellipse at 70% 20%, rgba(251, 191, 36, 0.3), transparent 50%), linear-gradient(180deg, #1a0a0a 0%, #2d0a0a 50%, #1a0a0a 100%); }
+  .forest-bg.forest-8 { background: radial-gradient(ellipse at 30% 80%, rgba(22, 163, 74, 0.55), transparent 60%), radial-gradient(ellipse at 70% 20%, rgba(251, 191, 36, 0.3), transparent 50%), linear-gradient(180deg, #0a1a0a 0%, #1a2d0a 50%, #0a1a0a 100%); }
+  .forest-bg.forest-9 { background: radial-gradient(ellipse at 30% 80%, rgba(253, 224, 71, 0.5), transparent 60%), radial-gradient(ellipse at 70% 20%, rgba(220, 38, 38, 0.3), transparent 50%), linear-gradient(180deg, #0a0a0a 0%, #2d1a0a 50%, #0a0a0a 100%); }
   .particles { position: absolute; inset: 0; pointer-events: none; overflow: hidden; }
   .particle {
-    position: absolute; width: 3px; height: 3px;
+    position: absolute; width: 4px; height: 4px;
     background: var(--gold-bright); border-radius: 50%;
-    box-shadow: 0 0 8px var(--gold-bright);
+    box-shadow: 0 0 12px var(--gold-bright), 0 0 24px rgba(220, 38, 38, 0.4);
     animation: float-up 8s linear infinite; opacity: 0;
   }
   @keyframes float-up {
@@ -254,8 +276,8 @@
   }
   .tap-indicator {
     position: absolute; font-family: 'Cinzel', serif;
-    font-weight: 700; font-size: 1.4rem; color: var(--gold-bright);
-    text-shadow: 0 0 10px rgba(0,0,0,0.8);
+    font-weight: 900; font-size: 1.6rem; color: var(--gold-bright);
+    text-shadow: 0 0 12px rgba(220, 38, 38, 0.6), 2px 2px 0 #000, -2px -2px 0 #000, 2px -2px 0 #000, -2px 2px 0 #000;
     pointer-events: none; animation: tap-rise 0.9s ease-out forwards; z-index: 20;
   }
   @keyframes tap-rise {
@@ -285,9 +307,9 @@
   }
   .energy-fill {
     height: 100%;
-    background: linear-gradient(90deg, var(--gold-dim), var(--gold), var(--gold-bright));
+    background: linear-gradient(90deg, var(--red-dim), var(--red-bright), var(--gold-bright));
     border-radius: 999px; transition: width 0.3s ease;
-    box-shadow: 0 0 12px rgba(240, 200, 120, 0.4);
+    box-shadow: 0 0 12px rgba(239, 68, 68, 0.5);
   }
   .progress-section { margin-top: 0.6rem; }
 
@@ -295,27 +317,29 @@
   .bottom-nav {
     display: flex; justify-content: space-around;
     padding: 0.6rem 0.6rem 1.2rem;
-    background: linear-gradient(180deg, transparent 0%, rgba(0,0,0,0.6) 50%);
-    border-top: 1px solid rgba(212, 160, 76, 0.2);
+    background: linear-gradient(180deg, transparent 0%, rgba(0,0,0,0.85) 50%);
+    border-top: 1px solid rgba(220, 38, 38, 0.3);
   }
   .nav-btn {
     display: flex; flex-direction: column;
     align-items: center; gap: 0.15rem;
     padding: 0.4rem 0.5rem; border-radius: 12px;
-    transition: background 0.2s; min-width: 60px;
+    transition: background 0.2s, transform 0.15s; min-width: 60px;
   }
-  .nav-btn:active { background: rgba(212, 160, 76, 0.15); }
-  .nav-icon { font-size: 1.3rem; margin-bottom: 0.05rem; }
+  .nav-btn:active { background: rgba(220, 38, 38, 0.2); transform: scale(0.92); }
+  .nav-icon { font-size: 1.4rem; margin-bottom: 0.05rem; filter: drop-shadow(0 0 4px rgba(251, 191, 36, 0.4)); }
   .nav-label {
     font-size: 0.6rem; text-transform: uppercase;
-    letter-spacing: 0.08em; color: var(--mist); font-weight: 500;
+    letter-spacing: 0.08em; color: var(--gold); font-weight: 700;
   }
   .nav-btn.claim {
-    background: linear-gradient(135deg, var(--gold-bright), var(--gold));
-    color: #1a1009;
-    box-shadow: 0 4px 16px rgba(212, 160, 76, 0.4);
+    background: linear-gradient(135deg, var(--gold-bright), var(--red));
+    color: #000;
+    box-shadow: 0 4px 16px rgba(220, 38, 38, 0.5), 0 0 20px rgba(251, 191, 36, 0.3);
+    border: 2px solid rgba(0,0,0,0.3);
   }
-  .nav-btn.claim .nav-label { color: #1a1009; font-weight: 700; }
+  .nav-btn.claim .nav-label { color: #000; font-weight: 900; }
+  .nav-btn.claim .nav-icon { filter: drop-shadow(0 0 4px rgba(0,0,0,0.4)); }
 
   /* MODAL */
   .modal-backdrop {
@@ -330,13 +354,15 @@
   @keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }
   .modal {
     width: 100%; max-width: 480px; max-height: 90vh;
-    background: linear-gradient(180deg, #1f4a2e 0%, #0a1f14 100%);
-    border-top: 2px solid var(--gold);
+    background: linear-gradient(180deg, #1a0e0a 0%, #0a0a0a 100%);
+    border-top: 3px solid var(--gold);
+    border-left: 1px solid rgba(220, 38, 38, 0.2);
+    border-right: 1px solid rgba(220, 38, 38, 0.2);
     border-radius: 24px 24px 0 0;
     padding: 1.3rem 1rem 1.8rem;
     overflow-y: auto;
     animation: slide-up 0.3s ease;
-    box-shadow: 0 -20px 60px rgba(0,0,0,0.8);
+    box-shadow: 0 -20px 60px rgba(0,0,0,0.95), 0 -10px 40px rgba(220, 38, 38, 0.1);
   }
   @keyframes slide-up { from { transform: translateY(100%); } to { transform: translateY(0); } }
   .modal-header {
@@ -372,8 +398,8 @@
     gap: 0.7rem;
   }
   .item-card {
-    background: rgba(0,0,0,0.4);
-    border: 1px solid rgba(212, 160, 76, 0.2);
+    background: linear-gradient(135deg, rgba(26, 14, 10, 0.7), rgba(0,0,0,0.5));
+    border: 1px solid rgba(220, 38, 38, 0.3);
     border-radius: 14px;
     padding: 0.7rem;
     display: flex; flex-direction: column;
@@ -383,8 +409,8 @@
   }
   .item-card.active {
     border-color: var(--gold-bright);
-    background: rgba(212, 160, 76, 0.12);
-    box-shadow: 0 0 16px rgba(212, 160, 76, 0.3);
+    background: linear-gradient(135deg, rgba(251, 191, 36, 0.15), rgba(220, 38, 38, 0.1));
+    box-shadow: 0 0 20px rgba(251, 191, 36, 0.4), inset 0 0 20px rgba(251, 191, 36, 0.1);
   }
   .item-card.locked { opacity: 0.55; }
   .item-img-wrap {
@@ -436,26 +462,27 @@
   .item-rarity.divine { background: var(--rarity-divine); }
   .item-btn {
     width: 100%;
-    padding: 0.5rem;
-    background: linear-gradient(135deg, var(--gold-bright), var(--gold));
-    color: #1a1009;
+    padding: 0.55rem;
+    background: linear-gradient(135deg, var(--gold-bright), var(--red));
+    color: #000;
     border-radius: 8px;
-    font-size: 0.7rem;
-    font-weight: 700;
+    font-size: 0.72rem;
+    font-weight: 800;
     text-transform: uppercase;
     letter-spacing: 0.05em;
     margin-top: auto;
+    border: 1px solid rgba(0,0,0,0.3);
   }
   .item-btn.wld {
-    background: linear-gradient(135deg, #fff, #ddd);
+    background: linear-gradient(135deg, var(--gold-bright), var(--gold));
     color: #000;
   }
   .item-btn.brzl {
-    background: linear-gradient(135deg, #6aa84f, #4a7c3a);
-    color: white;
+    background: linear-gradient(135deg, var(--green-bright), var(--green));
+    color: #fff;
   }
   .item-btn.equipped {
-    background: linear-gradient(135deg, var(--bg-light), #2c5020);
+    background: linear-gradient(135deg, var(--brown), var(--brown-light));
     color: var(--gold-bright);
   }
   .item-btn:disabled { opacity: 0.4; cursor: not-allowed; }
@@ -463,12 +490,13 @@
     position: absolute;
     top: 0.4rem; right: 0.4rem;
     background: var(--gold-bright);
-    color: #1a1009;
+    color: #000;
     font-size: 0.55rem;
-    font-weight: 700;
-    padding: 0.15rem 0.4rem;
+    font-weight: 900;
+    padding: 0.2rem 0.5rem;
     border-radius: 999px;
     z-index: 2;
+    box-shadow: 0 0 8px rgba(251, 191, 36, 0.5);
   }
 
   /* TIER cards */
@@ -498,12 +526,14 @@
     letter-spacing: 0.05em;
   }
   .tier-btn.wld {
-    background: linear-gradient(135deg, #fff, #ddd);
+    background: linear-gradient(135deg, var(--gold-bright), var(--gold));
     color: #000;
+    font-weight: 900;
   }
   .tier-btn.brzl {
-    background: linear-gradient(135deg, var(--bg-light), #2c5020);
-    color: var(--cream);
+    background: linear-gradient(135deg, var(--green-bright), var(--green));
+    color: #fff;
+    font-weight: 900;
   }
   .tier-btn:disabled { opacity: 0.4; cursor: not-allowed; }
 
@@ -551,8 +581,8 @@
     <div class="login-sub">Barzola Legacy</div>
     <div class="login-card">
       <div id="warning-box"></div>
-      <h2>WELCOME</h2>
-      <p>Connect your World App wallet to start farming WOOD in the enchanted forest.</p>
+      <h2>LFG 🚀</h2>
+      <p>Connect your World App wallet and start chopping. <b style="color: var(--gold-bright);">WAGMI 🪓</b></p>
       <button class="btn-primary" id="btn-connect">🌍 Connect Wallet</button>
     </div>
     <div style="margin-top: 1.5rem; font-size: 0.7rem; color: var(--mist); text-align: center; max-width: 320px;">
@@ -636,7 +666,7 @@
         <span class="nav-label">Stats</span>
       </button>
     </nav>
-    <div class="version-tag">v4.0 · swap</div>
+    <div class="version-tag">v5.0 · meme</div>
   </div>
 
   <div class="modal-backdrop" id="modal-backdrop">
@@ -701,10 +731,10 @@
     TREASURY: "0x57CBd2829e8e5A61793C12424f4a7eA7B4D7d503",
     WOOD_SWAP: "0x26b8c5725391D02390b948ff929cf506aE492eDb",
     BACKEND_URL: "https://wood-farm-3uuz.vercel.app",
-    SWAP_RATIO: 100,  // 1 BRZL = 100 WOOD
+    SWAP_RATIO: 1000,  // 1 BRZL = 1000 WOOD
     ENERGY_MAX_BASE: 100,
     ENERGY_REGEN_MS: 3000,
-    WOOD_PER_LEVEL: 100000,
+    WOOD_PER_LEVEL: 1000000,
     CLAIM_MIN: 100,
     FORESTS: [
       { id: 1, name: 'GREEN FOREST' },
@@ -718,37 +748,37 @@
       { id: 9, name: 'DIVINE FOREST' }
     ],
     TREES: [
-      { id: 1,  name: 'Green Oak',        img: 'a1.jpeg',  woodTap: 1,  rarity: 'common',    price: 0,        currency: 'wood' },
-      { id: 2,  name: 'Pine',             img: 'a2.jpeg',  woodTap: 2,  rarity: 'common',    price: 500,      currency: 'wood' },
-      { id: 3,  name: 'Birch',            img: 'a3.jpeg',  woodTap: 3,  rarity: 'uncommon',  price: 2000,     currency: 'wood' },
-      { id: 4,  name: 'Cedar',            img: 'a4.jpeg',  woodTap: 5,  rarity: 'rare',      price: 10000,    currency: 'wood' },
-      { id: 5,  name: 'Tropical Palm',    img: 'a5.jpeg',  woodTap: 8,  rarity: 'epic',      price: 50000,    currency: 'wood' },
-      { id: 6,  name: 'Golden Tree',      img: 'a6.jpeg',  woodTap: 15, rarity: 'legendary', price: 200000,   currency: 'wood' },
-      { id: 7,  name: 'Crystal Tree',     img: 'a7.jpeg',  woodTap: 10, rarity: 'epic',      price: 80000,    currency: 'wood' },
-      { id: 8,  name: 'Sacred Cherry',    img: 'a8.jpeg',  woodTap: 10, rarity: 'epic',      price: 80000,    currency: 'wood' },
-      { id: 9,  name: 'Spirit Tree',      img: 'a9.jpeg',  woodTap: 20, rarity: 'legendary', price: 500000,   currency: 'wood' },
-      { id: 10, name: 'Igneous Tree',     img: 'a10.jpeg', woodTap: 20, rarity: 'legendary', price: 500000,   currency: 'wood' },
-      { id: 11, name: 'Lunar Tree',       img: 'a11.jpeg', woodTap: 25, rarity: 'mythic',    price: 1000000,  currency: 'wood' },
-      { id: 12, name: 'Yggdrasil',        img: 'a12.jpeg', woodTap: 50, rarity: 'divine',    price: 5000000,  currency: 'wood' }
+      { id: 1,  name: 'Green Oak',        img: 'a1.jpeg',  woodTap: 10,   rarity: 'common',    price: 0,         currency: 'wood' },
+      { id: 2,  name: 'Pine',             img: 'a2.jpeg',  woodTap: 20,   rarity: 'common',    price: 5000,      currency: 'wood' },
+      { id: 3,  name: 'Birch',            img: 'a3.jpeg',  woodTap: 30,   rarity: 'uncommon',  price: 20000,     currency: 'wood' },
+      { id: 4,  name: 'Cedar',            img: 'a4.jpeg',  woodTap: 50,   rarity: 'rare',      price: 100000,    currency: 'wood' },
+      { id: 5,  name: 'Tropical Palm',    img: 'a5.jpeg',  woodTap: 80,   rarity: 'epic',      price: 500000,    currency: 'wood' },
+      { id: 6,  name: 'Golden Tree',      img: 'a6.jpeg',  woodTap: 150,  rarity: 'legendary', price: 2000000,   currency: 'wood' },
+      { id: 7,  name: 'Crystal Tree',     img: 'a7.jpeg',  woodTap: 100,  rarity: 'epic',      price: 800000,    currency: 'wood' },
+      { id: 8,  name: 'Sacred Cherry',    img: 'a8.jpeg',  woodTap: 100,  rarity: 'epic',      price: 800000,    currency: 'wood' },
+      { id: 9,  name: 'Spirit Tree',      img: 'a9.jpeg',  woodTap: 200,  rarity: 'legendary', price: 5000000,   currency: 'wood' },
+      { id: 10, name: 'Igneous Tree',     img: 'a10.jpeg', woodTap: 200,  rarity: 'legendary', price: 5000000,   currency: 'wood' },
+      { id: 11, name: 'Lunar Tree',       img: 'a11.jpeg', woodTap: 250,  rarity: 'mythic',    price: 10000000,  currency: 'wood' },
+      { id: 12, name: 'Yggdrasil',        img: 'a12.jpeg', woodTap: 500,  rarity: 'divine',    price: 50000000,  currency: 'wood' }
     ],
     UPGRADES: [
       // Basic Upgrades (WOOD)
-      { id: 1,  name: 'Sharp Axe',           img: 'hacha.jpeg', effect: '+1 WOOD per tap',          effectKey: 'tapBonus',     value: 1,   rarity: 'common',    price: 500,      currency: 'wood', desc: 'Your first upgrade' },
-      { id: 2,  name: 'Titanium Axe',        img: '2.jpeg',     effect: '+2 WOOD per tap',          effectKey: 'tapBonus',     value: 2,   rarity: 'uncommon',  price: 5000,     currency: 'wood', desc: 'Tough axe' },
-      { id: 3,  name: 'Energy Tank',         img: '3.jpeg',     effect: '+50 max energy',           effectKey: 'energyMax',    value: 50,  rarity: 'uncommon',  price: 10000,    currency: 'wood', desc: 'More capacity' },
-      { id: 4,  name: 'Fast Recovery',       img: '4.jpeg',     effect: '2x energy regen',          effectKey: 'regenSpeed',   value: 2,   rarity: 'rare',      price: 20000,    currency: 'wood', desc: 'Energy recovers faster' },
-      { id: 5,  name: 'Chainsaw',            img: '5.jpeg',     effect: '+3 WOOD per tap',          effectKey: 'tapBonus',     value: 3,   rarity: 'rare',      price: 50000,    currency: 'wood', desc: 'Cuts like butter' },
-      { id: 6,  name: 'Offline Production',  img: '6.jpeg',     effect: 'Earn WOOD while away',     effectKey: 'offline',      value: 1,   rarity: 'epic',      price: 100000,   currency: 'wood', desc: 'Generates while idle' },
+      { id: 1,  name: 'Sharp Axe',           img: 'hacha.jpeg', effect: '+10 WOOD per tap',         effectKey: 'tapBonus',     value: 10,  rarity: 'common',    price: 5000,     currency: 'wood', desc: 'Your first upgrade' },
+      { id: 2,  name: 'Titanium Axe',        img: '2.jpeg',     effect: '+20 WOOD per tap',         effectKey: 'tapBonus',     value: 20,  rarity: 'uncommon',  price: 50000,    currency: 'wood', desc: 'Tough axe' },
+      { id: 3,  name: 'Energy Tank',         img: '3.jpeg',     effect: '+50 max energy',           effectKey: 'energyMax',    value: 50,  rarity: 'uncommon',  price: 100000,   currency: 'wood', desc: 'More capacity' },
+      { id: 4,  name: 'Fast Recovery',       img: '4.jpeg',     effect: '2x energy regen',          effectKey: 'regenSpeed',   value: 2,   rarity: 'rare',      price: 200000,   currency: 'wood', desc: 'Energy recovers faster' },
+      { id: 5,  name: 'Chainsaw',            img: '5.jpeg',     effect: '+30 WOOD per tap',         effectKey: 'tapBonus',     value: 30,  rarity: 'rare',      price: 500000,   currency: 'wood', desc: 'Cuts like butter' },
+      { id: 6,  name: 'Offline Production',  img: '6.jpeg',     effect: 'Earn WOOD while away',     effectKey: 'offline',      value: 1,   rarity: 'epic',      price: 1000000,  currency: 'wood', desc: 'Generates while idle' },
       // Advanced Upgrades (BRZL)
-      { id: 7,  name: 'Forest Tractor',      img: '7.jpeg',     effect: '+5 WOOD per tap',          effectKey: 'tapBonus',     value: 5,   rarity: 'epic',      price: 300,      currency: 'brzl', desc: 'Works for you' },
-      { id: 8,  name: 'Auto Sawmill',        img: '8.jpeg',     effect: '+0.5 WOOD/sec idle',       effectKey: 'idleRate',     value: 0.5, rarity: 'epic',      price: 500,      currency: 'brzl', desc: 'Passive production' },
+      { id: 7,  name: 'Forest Tractor',      img: '7.jpeg',     effect: '+50 WOOD per tap',         effectKey: 'tapBonus',     value: 50,  rarity: 'epic',      price: 300,      currency: 'brzl', desc: 'Works for you' },
+      { id: 8,  name: 'Auto Sawmill',        img: '8.jpeg',     effect: '+5 WOOD/sec idle',         effectKey: 'idleRate',     value: 5,   rarity: 'epic',      price: 500,      currency: 'brzl', desc: 'Passive production' },
       { id: 9,  name: 'Forest Spirit',       img: '9.jpeg',     effect: 'x2 WOOD per tap',          effectKey: 'tapMult',      value: 2,   rarity: 'legendary', price: 800,      currency: 'brzl', desc: 'The forest blesses you' },
       { id: 10, name: 'Premium Chest',       img: '10.jpeg',    effect: 'Daily random reward',      effectKey: 'dailyChest',   value: 1,   rarity: 'epic',      price: 1500,     currency: 'brzl', desc: 'Surprise every day' },
       // Legendary Upgrades (WLD)
       { id: 11, name: 'Streak Shield',       img: '11.jpeg',    effect: 'Protects your daily streak', effectKey: 'streakShield', value: 1,   rarity: 'legendary', price: 15,       currency: 'wld',  desc: "Don't lose your streak" },
       { id: 12, name: 'Infinite Energy',     img: '12.jpeg',    effect: 'No limit 1h/day',          effectKey: 'energyInf',    value: 1,   rarity: 'legendary', price: 25,       currency: 'wld',  desc: 'Tap non-stop for 1h' },
-      { id: 13, name: 'Legendary Tractor',   img: '13.jpeg',    effect: '+20 WOOD per tap',         effectKey: 'tapBonus',     value: 20,  rarity: 'legendary', price: 50,       currency: 'wld',  desc: 'War machine' },
-      { id: 14, name: 'Mega Sawmill',        img: '14.jpeg',    effect: '+5 WOOD/sec idle',         effectKey: 'idleRate',     value: 5,   rarity: 'mythic',    price: 100,      currency: 'wld',  desc: 'Lumber empire' },
+      { id: 13, name: 'Legendary Tractor',   img: '13.jpeg',    effect: '+200 WOOD per tap',        effectKey: 'tapBonus',     value: 200, rarity: 'legendary', price: 50,       currency: 'wld',  desc: 'War machine' },
+      { id: 14, name: 'Mega Sawmill',        img: '14.jpeg',    effect: '+50 WOOD/sec idle',        effectKey: 'idleRate',     value: 50,  rarity: 'mythic',    price: 100,      currency: 'wld',  desc: 'Lumber empire' },
       { id: 15, name: 'Forest Core',         img: '15.jpeg',    effect: 'x3 WOOD per tap',          effectKey: 'tapMult',      value: 3,   rarity: 'divine',    price: 200,      currency: 'wld',  desc: 'Ancestral power' }
     ],
     TIERS: [
@@ -868,7 +898,7 @@
         // Bono de bienvenida en local
         state.pending = 1000;
         state.totalFarmed = 1000;
-        setTimeout(() => showToast('🎁 Welcome bonus: 1000 WOOD!', 'success'), 800);
+        setTimeout(() => showToast('🎁 Welcome bonus: 1000 WOOD = 1 BRZL!', 'success'), 800);
       }
     } catch (e) { console.error('loadUser:', e); }
   }
@@ -1455,7 +1485,7 @@
     else if (type === 'swap') {
       body.innerHTML = `
         <p style="color: var(--mist); font-size: 0.78rem; margin-bottom: 1rem; line-height: 1.5;">
-          Convert your tokens. <b>Rate: 1 BRZL = 100 WOOD</b>
+          Convert your tokens. <b>Rate: 1 BRZL = 1,000 WOOD</b>
         </p>
 
         <!-- BRZL → WOOD -->
@@ -1485,7 +1515,7 @@
           </div>
           <div style="font-size: 0.65rem; color: var(--mist); margin-bottom: 0.5rem; line-height: 1.4;">
             Your tier: <b style="color: var(--gold-bright);">${state.tier === 0 ? 'FREE (50 BRZL/day)' : CONFIG.TIERS[state.tier - 1].name}</b><br>
-            Available: <b>${fmt(state.pending)} WOOD</b> (= ${fmt(Math.floor(state.pending / 100))} BRZL)
+            Available: <b>${fmt(state.pending)} WOOD</b> (= ${fmt(Math.floor(state.pending / 1000))} BRZL)
           </div>
           <div style="margin-bottom: 0.5rem;">
             <div style="font-size: 0.65rem; color: var(--mist); margin-bottom: 0.3rem;">I want to receive (BRZL)</div>
