@@ -666,7 +666,7 @@
         <span class="nav-label">Rank</span>
       </button>
     </nav>
-    <div class="version-tag">v6.2 · rank+puf</div>
+    <div class="version-tag">v6.3 · referrals</div>
   </div>
 
   <div class="modal-backdrop" id="modal-backdrop">
@@ -753,6 +753,12 @@
     WITHDRAW_MAX_DAILY: 5000,           // 5000 BRZL/24h
     WITHDRAW_COOLDOWN_SEC: 6 * 60 * 60, // 6h cooldown
     WITHDRAW_FEE_PCT: 1,                // 1% fee
+
+    // Sistema de referidos
+    REFERRAL_BONUS_INVITER: 5000,       // WOOD para el que invita
+    REFERRAL_BONUS_INVITED: 2500,       // WOOD para el invitado
+    REFERRAL_TRIGGER_WOOD: 10000,       // Se activa al farmear 10K WOOD
+
     FORESTS: [
       { id: 1, name: 'GREEN FOREST' },
       { id: 2, name: 'AUTUMN FOREST' },
@@ -825,8 +831,22 @@
     username: '',            // NUEVO: username de World App
     weeklyWood: 0,           // NUEVO: WOOD farmeado esta semana
     weeklyBrzl: 0,           // NUEVO: BRZL retirado esta semana
-    weekKey: ''              // NUEVO: semana actual "2026-W21"
+    weekKey: '',             // NUEVO: semana actual "2026-W21"
+    referralCode: '',        // NUEVO: código propio para invitar (WOOD-XXXX)
+    referredBy: '',          // NUEVO: código del que me invitó
+    referralPaid: false,     // NUEVO: si ya se pagó el bono al referente
+    referralsCount: 0        // NUEVO: cantidad de referidos exitosos
   };
+
+  // Generar código de referido único tipo WOOD-A3F2
+  function generateReferralCode() {
+    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+    let code = 'WOOD-';
+    for (let i = 0; i < 4; i++) {
+      code += chars[Math.floor(Math.random() * chars.length)];
+    }
+    return code;
+  }
 
   // Helper: clave de la semana actual (ISO 8601: YYYY-Www)
   function getWeekKey() {
@@ -984,6 +1004,15 @@
         state.weeklyWood = d.weeklyWood ?? 0;
         state.weeklyBrzl = d.weeklyBrzl ?? 0;
         state.weekKey = d.weekKey ?? '';
+        state.referralCode = d.referralCode ?? '';
+        state.referredBy = d.referredBy ?? '';
+        state.referralPaid = d.referralPaid ?? false;
+        state.referralsCount = d.referralsCount ?? 0;
+
+        // Generar código si no tiene (para users viejos)
+        if (!state.referralCode) {
+          state.referralCode = generateReferralCode();
+        }
 
         // Migrar mejoras viejas
         state.ownedUpgrades.forEach(id => {
@@ -1017,6 +1046,7 @@
         state.energy = Math.min(getEnergyMax(), state.energy + regen);
       } else {
         const currentWeek = getWeekKey();
+        const newReferralCode = generateReferralCode();
         await setDoc(ref, {
           address: address.toLowerCase(),
           username: state.username || '',
@@ -1031,13 +1061,22 @@
           weeklyWood: 1000,
           weeklyBrzl: 0,
           weekKey: currentWeek,
+          referralCode: newReferralCode,
+          referredBy: '',
+          referralPaid: false,
+          referralsCount: 0,
           createdAt: serverTimestamp()
         });
         state.pending = 1000;
         state.totalFarmed = 1000;
         state.weeklyWood = 1000;
         state.weekKey = currentWeek;
+        state.referralCode = newReferralCode;
         setTimeout(() => showToast('🎁 Welcome bonus: 1000 WOOD = 1 BRZL!', 'success'), 800);
+        // Mostrar prompt de código de referido después de cargar todo
+        setTimeout(() => {
+          try { askReferralCode(); } catch(e) { console.warn('askReferral failed:', e); }
+        }, 3000);
       }
     } catch (e) { console.error('loadUser:', e); }
   }
@@ -1066,6 +1105,10 @@
           weeklyWood: state.weeklyWood,
           weeklyBrzl: state.weeklyBrzl,
           weekKey: state.weekKey,
+          referralCode: state.referralCode,
+          referredBy: state.referredBy,
+          referralPaid: state.referralPaid,
+          referralsCount: state.referralsCount,
           updatedAt: serverTimestamp()
         });
       } catch (e) { console.error('save:', e); }
@@ -1123,6 +1166,7 @@
     showTapIndicator(event, gained);
     updateGameUI();
     checkLevelUp();
+    checkReferralPayment();
     scheduleSave();
   }
 
@@ -1810,6 +1854,145 @@
     return fmt(val) + (type === 'wood' ? ' 🪵' : ' 💰');
   }
 
+  // ============ SISTEMA DE REFERIDOS ============
+
+  // Mostrar prompt al user nuevo para ingresar código de referido
+  async function askReferralCode() {
+    // Solo si todavía no tiene referredBy
+    if (state.referredBy) return;
+
+    return new Promise((resolve) => {
+      // Crear modal nativo (no usar prompt() que no funciona en webview)
+      const overlay = document.createElement('div');
+      overlay.style.cssText = `
+        position: fixed; inset: 0; z-index: 9999;
+        background: rgba(0,0,0,0.85); display: flex;
+        align-items: center; justify-content: center; padding: 1rem;
+      `;
+      overlay.innerHTML = `
+        <div style="background: linear-gradient(180deg, #1a0e0a 0%, #0a0a0a 100%); border: 2px solid var(--gold-bright); border-radius: 16px; padding: 1.5rem; max-width: 360px; width: 100%;">
+          <h3 style="font-family: 'Cinzel', serif; font-weight: 900; color: var(--gold-bright); font-size: 1.1rem; text-align: center; margin-bottom: 0.8rem;">🎁 GOT A REFERRAL CODE?</h3>
+          <p style="color: var(--mist); font-size: 0.78rem; text-align: center; margin-bottom: 1rem; line-height: 1.4;">
+            If someone invited you, enter their code to get <b style="color: var(--gold-bright);">+2,500 WOOD bonus!</b>
+          </p>
+          <input type="text" id="ref-input" placeholder="WOOD-XXXX" maxlength="9"
+            style="width: 100%; padding: 0.8rem; background: rgba(0,0,0,0.5); border: 1px solid var(--gold-bright); border-radius: 10px; color: var(--gold-bright); font-family: monospace; font-size: 1.1rem; font-weight: 900; text-align: center; letter-spacing: 0.15em; outline: none; margin-bottom: 1rem; text-transform: uppercase;" />
+          <button id="ref-submit" style="width: 100%; padding: 0.8rem; background: linear-gradient(135deg, var(--gold-bright), var(--red)); color: #000; border-radius: 10px; font-weight: 900; font-size: 0.9rem; margin-bottom: 0.5rem; border: 2px solid rgba(0,0,0,0.3);">✓ APPLY CODE</button>
+          <button id="ref-skip" style="width: 100%; padding: 0.6rem; background: transparent; color: var(--mist); border-radius: 10px; font-size: 0.75rem;">Skip for now</button>
+        </div>
+      `;
+      document.body.appendChild(overlay);
+
+      const cleanup = () => { document.body.removeChild(overlay); resolve(); };
+
+      document.getElementById('ref-skip').onclick = cleanup;
+
+      document.getElementById('ref-submit').onclick = async () => {
+        const input = document.getElementById('ref-input');
+        const code = (input.value || '').trim().toUpperCase();
+
+        if (!code) { cleanup(); return; }
+
+        if (!code.match(/^WOOD-[A-Z0-9]{4}$/)) {
+          showToast('Invalid format. Use WOOD-XXXX', 'error');
+          return;
+        }
+        if (code === state.referralCode) {
+          showToast("Can't use your own code 😅", 'error');
+          return;
+        }
+
+        // Buscar al inviter por código
+        try {
+          const fb = window._fb;
+          if (!fb) { showToast('Try again in a moment', 'error'); return; }
+          const q = fb.query(
+            fb.collection(fb.db, 'users'),
+            fb.where('referralCode', '==', code),
+            fb.limit(1)
+          );
+          const snap = await fb.getDocs(q);
+          if (snap.empty) {
+            showToast('Code not found', 'error');
+            return;
+          }
+
+          state.referredBy = code;
+          state.pending += CONFIG.REFERRAL_BONUS_INVITED;
+          state.totalFarmed += CONFIG.REFERRAL_BONUS_INVITED;
+          state.weeklyWood += CONFIG.REFERRAL_BONUS_INVITED;
+          updateGameUI();
+          scheduleSave();
+          showToast(`🎉 +${fmt(CONFIG.REFERRAL_BONUS_INVITED)} WOOD bonus!`, 'success');
+          cleanup();
+        } catch (err) {
+          console.error('referral error:', err);
+          showToast('Error checking code', 'error');
+        }
+      };
+    });
+  }
+
+  // Verificar si llegó a 10K WOOD para pagar al inviter
+  async function checkReferralPayment() {
+    if (state.referralPaid) return;                  // ya se pagó
+    if (!state.referredBy) return;                    // no fue invitado
+    if (state.totalFarmed < CONFIG.REFERRAL_TRIGGER_WOOD) return; // todavía no llegó
+
+    try {
+      const fb = window._fb;
+      // Buscar al inviter por código
+      const q = fb.query(
+        fb.collection(fb.db, 'users'),
+        fb.where('referralCode', '==', state.referredBy),
+        fb.limit(1)
+      );
+      const snap = await fb.getDocs(q);
+      if (snap.empty) return;
+
+      const inviterDoc = snap.docs[0];
+      const inviterRef = fb.doc(fb.db, 'users', inviterDoc.id);
+      const inviterData = inviterDoc.data();
+
+      // Marcar como pagado en mi user
+      state.referralPaid = true;
+      scheduleSave();
+
+      // Sumar bonus al inviter
+      await fb.updateDoc(inviterRef, {
+        pending: (inviterData.pending || 0) + CONFIG.REFERRAL_BONUS_INVITER,
+        totalFarmed: (inviterData.totalFarmed || 0) + CONFIG.REFERRAL_BONUS_INVITER,
+        weeklyWood: (inviterData.weeklyWood || 0) + CONFIG.REFERRAL_BONUS_INVITER,
+        referralsCount: (inviterData.referralsCount || 0) + 1,
+        updatedAt: fb.serverTimestamp()
+      });
+
+      console.log('Referral bonus paid to inviter:', state.referredBy);
+    } catch (err) {
+      console.error('checkReferralPayment error:', err);
+    }
+  }
+
+  // Copiar código al clipboard
+  function copyReferralCode() {
+    const code = state.referralCode;
+    if (!code) return;
+    if (navigator.clipboard) {
+      navigator.clipboard.writeText(code).then(() => {
+        showToast('📋 Code copied!', 'success');
+      });
+    } else {
+      // Fallback
+      const ta = document.createElement('textarea');
+      ta.value = code;
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand('copy');
+      document.body.removeChild(ta);
+      showToast('📋 Code copied!', 'success');
+    }
+  }
+
   // ============ MODALES ============
   function rarityLabel(r) {
     return ({
@@ -2210,10 +2393,43 @@
     else if (type === 'stats') {
       const tree = CONFIG.TREES.find(t => t.id === state.activeTree);
       body.innerHTML = `
-        <div class="modal-section">
-          <div class="modal-label">Username</div>
-          <div class="modal-value">${state.username || '—'}</div>
+        <!-- REFERRAL SECTION -->
+        <div style="background: linear-gradient(135deg, rgba(251,191,36,0.15), rgba(220,38,38,0.08)); border: 2px solid var(--gold-bright); border-radius: 14px; padding: 1rem; margin-bottom: 1rem;">
+          <div style="font-family: 'Cinzel', serif; font-weight: 900; color: var(--gold-bright); font-size: 1rem; text-align: center; margin-bottom: 0.5rem;">
+            🎁 YOUR REFERRAL CODE
+          </div>
+          <div style="display: flex; gap: 0.5rem; align-items: center;">
+            <div style="flex: 1; padding: 0.7rem; background: rgba(0,0,0,0.5); border: 1px solid var(--gold-bright); border-radius: 10px; font-family: monospace; font-weight: 900; font-size: 1.2rem; color: var(--gold-bright); text-align: center; letter-spacing: 0.1em;">
+              ${state.referralCode || '—'}
+            </div>
+            <button id="btn-copy-ref" style="padding: 0.7rem 0.9rem; background: var(--gold-bright); color: #000; border-radius: 10px; font-weight: 900; cursor: pointer; font-size: 0.85rem;">📋</button>
+          </div>
+          <div style="font-size: 0.65rem; color: var(--mist); margin-top: 0.6rem; line-height: 1.4; text-align: center;">
+            🎯 You get <b style="color: var(--gold-bright);">+5,000 WOOD</b> when friends use your code<br>
+            🎯 They get <b style="color: var(--gold-bright);">+2,500 WOOD</b> when they enter it<br>
+            ⏱ Bonus paid when they reach 10K WOOD farmed
+          </div>
+          <div style="display: flex; gap: 0.5rem; margin-top: 0.7rem;">
+            <div style="flex: 1; text-align: center; padding: 0.5rem; background: rgba(0,0,0,0.4); border-radius: 8px;">
+              <div style="font-size: 0.6rem; color: var(--mist);">Invited</div>
+              <div style="font-weight: 900; color: var(--green-bright); font-size: 1.1rem;">${state.referralsCount || 0}</div>
+            </div>
+            <div style="flex: 1; text-align: center; padding: 0.5rem; background: rgba(0,0,0,0.4); border-radius: 8px;">
+              <div style="font-size: 0.6rem; color: var(--mist);">Earned</div>
+              <div style="font-weight: 900; color: var(--gold-bright); font-size: 1.1rem;">${fmt((state.referralsCount || 0) * CONFIG.REFERRAL_BONUS_INVITER)} 🪵</div>
+            </div>
+          </div>
+          ${state.referredBy ? `
+            <div style="margin-top: 0.7rem; padding: 0.5rem; background: rgba(22,163,74,0.15); border-radius: 8px; font-size: 0.7rem; text-align: center; color: var(--green-bright);">
+              ✓ Invited by: <b>${state.referredBy}</b>
+            </div>
+          ` : `
+            <button id="btn-enter-ref" style="width: 100%; margin-top: 0.7rem; padding: 0.6rem; background: linear-gradient(135deg, var(--green-bright), var(--green)); color: #fff; border-radius: 8px; font-weight: 800; font-size: 0.78rem;">
+              ➕ Enter referral code
+            </button>
+          `}
         </div>
+
         <div class="modal-section">
           <div class="modal-label">Wallet</div>
           <div style="font-family: monospace; font-size: 0.78rem; word-break: break-all; color: var(--cream);">${state.address || '—'}</div>
@@ -2255,6 +2471,14 @@
           <div class="modal-value">${fmt(getIdleRate())} WOOD/sec</div>
         </div>
       `;
+
+      // Bind buttons
+      setTimeout(() => {
+        const btnCopy = $('btn-copy-ref');
+        if (btnCopy) btnCopy.onclick = () => copyReferralCode();
+        const btnEnter = $('btn-enter-ref');
+        if (btnEnter) btnEnter.onclick = () => askReferralCode().then(() => renderModal('stats'));
+      }, 0);
     }
     $('modal-backdrop').classList.add('show');
   }
