@@ -597,7 +597,7 @@
           <span>🌲</span>
           <span id="forest-name">GREEN FOREST</span>
         </div>
-        <div class="wallet-mini" id="wallet-mini">0x000...000</div>
+        <div class="wallet-mini" id="wallet-mini" data-modal="stats" style="cursor: pointer;">0x000...000</div>
       </div>
       <div class="balance-display">
         <div class="balance-label">WOOD FARMED</div>
@@ -661,12 +661,12 @@
         <span class="nav-icon">👑</span>
         <span class="nav-label">VIP</span>
       </button>
-      <button class="nav-btn" data-modal="stats">
-        <span class="nav-icon">📊</span>
-        <span class="nav-label">Stats</span>
+      <button class="nav-btn" data-modal="rank">
+        <span class="nav-icon">🏆</span>
+        <span class="nav-label">Rank</span>
       </button>
     </nav>
-    <div class="version-tag">v6.0 · levels</div>
+    <div class="version-tag">v6.1 · rank</div>
   </div>
 
   <div class="modal-backdrop" id="modal-backdrop">
@@ -701,7 +701,7 @@
   let db = null;
   try {
     const { initializeApp } = await import("https://www.gstatic.com/firebasejs/12.13.0/firebase-app.js");
-    const { getFirestore, doc, getDoc, setDoc, updateDoc, serverTimestamp } = await import("https://www.gstatic.com/firebasejs/12.13.0/firebase-firestore.js");
+    const { getFirestore, doc, getDoc, setDoc, updateDoc, serverTimestamp, collection, query, where, orderBy, limit, getDocs } = await import("https://www.gstatic.com/firebasejs/12.13.0/firebase-firestore.js");
     const fbApp = initializeApp({
       apiKey: "AIzaSyCobpf2WVtkfQ00m-Botm7pQNmpFaQY26U",
       authDomain: "wood-farm-90d95.firebaseapp.com",
@@ -712,7 +712,7 @@
       measurementId: "G-K52TFYQKBD"
     });
     db = getFirestore(fbApp);
-    window._fb = { db, doc, getDoc, setDoc, updateDoc, serverTimestamp };
+    window._fb = { db, doc, getDoc, setDoc, updateDoc, serverTimestamp, collection, query, where, orderBy, limit, getDocs };
     console.log('Firebase listo');
   } catch (e) {
     console.error('Firebase error:', e);
@@ -816,13 +816,32 @@
     pending: 0,
     totalFarmed: 0,
     onchain: 0,
-    internalBrzl: 0,         // NUEVO: BRZL acumulado dentro de la app
+    internalBrzl: 0,
     tier: 0,
     energy: 100,
     lastEnergyTs: Date.now(),
-    lastWithdrawAt: 0,       // NUEVO: timestamp último retiro on-chain
-    dailyWithdraw: {}        // NUEVO: { "YYYY-MM-DD": cantidad }
+    lastWithdrawAt: 0,
+    dailyWithdraw: {},
+    username: '',            // NUEVO: username de World App
+    weeklyWood: 0,           // NUEVO: WOOD farmeado esta semana
+    weeklyBrzl: 0,           // NUEVO: BRZL retirado esta semana
+    weekKey: ''              // NUEVO: semana actual "2026-W21"
   };
+
+  // Helper: clave de la semana actual (ISO 8601: YYYY-Www)
+  function getWeekKey() {
+    const d = new Date();
+    const target = new Date(d.valueOf());
+    const dayNr = (d.getUTCDay() + 6) % 7;
+    target.setUTCDate(target.getUTCDate() - dayNr + 3);
+    const firstThursday = target.valueOf();
+    target.setUTCMonth(0, 1);
+    if (target.getUTCDay() !== 4) {
+      target.setUTCMonth(0, 1 + ((4 - target.getUTCDay()) + 7) % 7);
+    }
+    const weekNum = 1 + Math.ceil((firstThursday - target) / 604800000);
+    return `${d.getUTCFullYear()}-W${String(weekNum).padStart(2, '0')}`;
+  }
 
   const $ = id => document.getElementById(id);
   function showToast(msg, type='') {
@@ -961,12 +980,25 @@
         state.lastEnergyTs = d.lastEnergyTs ?? Date.now();
         state.lastWithdrawAt = d.lastWithdrawAt ?? 0;
         state.dailyWithdraw = d.dailyWithdraw ?? {};
-        // Migrar mejoras viejas (sin upgradeData): asumir Lvl 1, recién compradas
+        state.username = d.username ?? '';
+        state.weeklyWood = d.weeklyWood ?? 0;
+        state.weeklyBrzl = d.weeklyBrzl ?? 0;
+        state.weekKey = d.weekKey ?? '';
+
+        // Migrar mejoras viejas
         state.ownedUpgrades.forEach(id => {
           if (!state.upgradeData[id]) {
             state.upgradeData[id] = { level: 1, purchasedAt: Math.floor(Date.now() / 1000) };
           }
         });
+
+        // Reset semanal si cambió la semana
+        const currentWeek = getWeekKey();
+        if (state.weekKey !== currentWeek) {
+          state.weeklyWood = 0;
+          state.weeklyBrzl = 0;
+          state.weekKey = currentWeek;
+        }
         // Calcular WOOD idle ganado mientras estuvo afuera
         const idleRate = getIdleRate();
         if (idleRate > 0) {
@@ -975,6 +1007,7 @@
           if (idleWood > 0) {
             state.pending += idleWood;
             state.totalFarmed += idleWood;
+            state.weeklyWood += idleWood;
             showToast(`💤 You earned ${fmt(idleWood)} WOOD while away`, 'success');
           }
         }
@@ -983,8 +1016,10 @@
         const regen = Math.floor(elapsed / getEnergyRegenMs());
         state.energy = Math.min(getEnergyMax(), state.energy + regen);
       } else {
+        const currentWeek = getWeekKey();
         await setDoc(ref, {
           address: address.toLowerCase(),
+          username: state.username || '',
           energy: 100, forestId: 1,
           activeTree: 1, ownedTrees: [1], ownedUpgrades: [],
           upgradeData: {},
@@ -993,11 +1028,15 @@
           lastEnergyTs: Date.now(),
           lastWithdrawAt: 0,
           dailyWithdraw: {},
+          weeklyWood: 1000,
+          weeklyBrzl: 0,
+          weekKey: currentWeek,
           createdAt: serverTimestamp()
         });
-        // Bono de bienvenida en local
         state.pending = 1000;
         state.totalFarmed = 1000;
+        state.weeklyWood = 1000;
+        state.weekKey = currentWeek;
         setTimeout(() => showToast('🎁 Welcome bonus: 1000 WOOD = 1 BRZL!', 'success'), 800);
       }
     } catch (e) { console.error('loadUser:', e); }
@@ -1023,6 +1062,10 @@
           lastEnergyTs: state.lastEnergyTs,
           lastWithdrawAt: state.lastWithdrawAt,
           dailyWithdraw: state.dailyWithdraw,
+          username: state.username,
+          weeklyWood: state.weeklyWood,
+          weeklyBrzl: state.weeklyBrzl,
+          weekKey: state.weekKey,
           updatedAt: serverTimestamp()
         });
       } catch (e) { console.error('save:', e); }
@@ -1075,6 +1118,7 @@
     state.energy -= 1;
     state.pending += gained;
     state.totalFarmed += gained;
+    state.weeklyWood += gained;
     state.lastEnergyTs = Date.now();
     showTapIndicator(event, gained);
     updateGameUI();
@@ -1125,7 +1169,7 @@
   function updateWalletUI() {
     if (state.address) {
       const short = state.address.slice(0, 6) + '...' + state.address.slice(-4);
-      $('wallet-mini').textContent = short;
+      $('wallet-mini').textContent = state.username ? `@${state.username}` : short;
     }
   }
 
@@ -1191,6 +1235,7 @@
     if (idleRate > 0 && state.address) {
       state.pending += idleRate;
       state.totalFarmed += idleRate;
+      state.weeklyWood += idleRate;
       updateGameUI();
       checkLevelUp();
       scheduleSave();
@@ -1649,9 +1694,9 @@
       }
 
       // Operación exitosa: actualizar local (backend ya actualizó Firebase)
-      // El user recibió (amount - fee) en wallet. Internamente quitamos amount completo.
       state.internalBrzl -= brzlAmount;
       state.lastWithdrawAt = nowSec;
+      state.weeklyBrzl += brzlAmount;
       if (!state.dailyWithdraw) state.dailyWithdraw = {};
       state.dailyWithdraw[todayKey] = (state.dailyWithdraw[todayKey] || 0) + brzlAmount;
       updateGameUI();
@@ -1666,6 +1711,103 @@
       console.error('withdrawToWallet:', e);
       showToast('Error: ' + (e.message || '').slice(0, 40), 'error');
     }
+  }
+
+  // ============ LEADERBOARD ============
+  async function fetchLeaderboard(type) {
+    const listEl = document.getElementById('rank-list');
+    if (!listEl) return;
+    listEl.innerHTML = '<div style="text-align: center; color: var(--mist); padding: 2rem 0;">⏳ Loading...</div>';
+
+    try {
+      const fb = window._fb;
+      if (!fb) {
+        listEl.innerHTML = '<div style="text-align: center; color: var(--red-bright);">Firebase not ready</div>';
+        return;
+      }
+
+      const currentWeek = getWeekKey();
+      let orderField, label;
+      if (type === 'wood') { orderField = 'weeklyWood'; label = 'WOOD'; }
+      else if (type === 'brzl') { orderField = 'weeklyBrzl'; label = 'BRZL'; }
+      else { orderField = 'forestId'; label = 'Forest'; }
+
+      // Para weekly necesitamos filtrar por weekKey, para forest no
+      let q;
+      if (type === 'forest') {
+        q = fb.query(
+          fb.collection(fb.db, 'users'),
+          fb.orderBy(orderField, 'desc'),
+          fb.limit(100)
+        );
+      } else {
+        q = fb.query(
+          fb.collection(fb.db, 'users'),
+          fb.where('weekKey', '==', currentWeek),
+          fb.orderBy(orderField, 'desc'),
+          fb.limit(100)
+        );
+      }
+
+      const snap = await fb.getDocs(q);
+      const users = [];
+      snap.forEach(d => {
+        const data = d.data();
+        users.push({
+          address: data.address || d.id,
+          username: data.username || '',
+          value: data[orderField] || 0,
+          forestId: data.forestId || 1,
+          forestName: CONFIG.FORESTS[Math.min((data.forestId || 1) - 1, CONFIG.FORESTS.length - 1)].name
+        });
+      });
+
+      // Buscar mi posición
+      let myRank = -1;
+      const myAddr = state.address?.toLowerCase();
+      if (myAddr) {
+        myRank = users.findIndex(u => u.address.toLowerCase() === myAddr);
+      }
+
+      if (users.length === 0) {
+        listEl.innerHTML = `<div style="text-align: center; color: var(--mist); padding: 2rem 0; font-size: 0.85rem;">No one in ranking yet.<br>Be the first! 🏆</div>`;
+        return;
+      }
+
+      const myPosBanner = myRank >= 0 ? `
+        <div style="background: linear-gradient(135deg, rgba(251,191,36,0.2), rgba(220,38,38,0.1)); border: 2px solid var(--gold-bright); border-radius: 12px; padding: 0.8rem; margin-bottom: 0.8rem; font-weight: 800; text-align: center; color: var(--gold-bright);">
+          📍 Your rank: #${myRank + 1} · ${formatRankValue(users[myRank].value, type)}
+        </div>
+      ` : (myAddr ? `<div style="color: var(--mist); font-size: 0.7rem; text-align: center; margin-bottom: 0.8rem;">You're not in top 100 yet · Keep farming!</div>` : '');
+
+      listEl.innerHTML = myPosBanner + users.slice(0, 100).map((u, i) => {
+        const rank = i + 1;
+        const medal = rank === 1 ? '🥇' : rank === 2 ? '🥈' : rank === 3 ? '🥉' : `#${rank}`;
+        const name = u.username || (u.address.slice(0, 6) + '...' + u.address.slice(-4));
+        const isMe = u.address.toLowerCase() === myAddr;
+        const bg = rank <= 3 ? 'linear-gradient(90deg, rgba(251,191,36,0.15), transparent)' :
+                   (isMe ? 'rgba(220,38,38,0.2)' : 'rgba(0,0,0,0.3)');
+        const border = isMe ? '2px solid var(--gold-bright)' : '1px solid rgba(220,38,38,0.15)';
+        return `
+          <div style="display: flex; align-items: center; padding: 0.6rem 0.7rem; background: ${bg}; border: ${border}; border-radius: 10px; margin-bottom: 0.3rem;">
+            <div style="font-weight: 900; font-size: 0.9rem; min-width: 45px; color: ${rank <= 3 ? 'var(--gold-bright)' : 'var(--mist)'};">${medal}</div>
+            <div style="flex: 1; font-weight: 700; font-size: 0.8rem; color: var(--cream); overflow: hidden; text-overflow: ellipsis;">${name}${isMe ? ' (YOU)' : ''}</div>
+            <div style="font-weight: 800; color: var(--gold-bright); font-size: 0.78rem;">${formatRankValue(u.value, type)}</div>
+          </div>
+        `;
+      }).join('');
+    } catch (err) {
+      console.error('Leaderboard error:', err);
+      listEl.innerHTML = `<div style="text-align: center; color: var(--red-bright); padding: 1rem; font-size: 0.75rem;">Failed to load ranking.<br>${err.message?.includes('index') ? 'Firebase index missing.' : 'Try again.'}</div>`;
+    }
+  }
+
+  function formatRankValue(val, type) {
+    if (type === 'forest') {
+      const f = CONFIG.FORESTS[Math.min(val - 1, CONFIG.FORESTS.length - 1)];
+      return f ? f.name.split(' ')[0] : `Forest ${val}`;
+    }
+    return fmt(val) + (type === 'wood' ? ' 🪵' : ' 💰');
   }
 
   // ============ MODALES ============
@@ -1690,7 +1832,8 @@
   function openModal(type) {
     const titles = {
       trees:'My Trees', upgrades:'Upgrades',
-      swap:'Swap', tier:'VIP Memberships', stats:'Statistics'
+      swap:'Swap', tier:'VIP Memberships', stats:'Statistics',
+      rank:'🏆 Weekly Leaderboard'
     };
     $('modal-title').textContent = titles[type] || 'Info';
     const body = $('modal-body');
@@ -1993,9 +2136,60 @@
         }
       }, 0);
     }
+    else if (type === 'rank') {
+      const currentWeek = getWeekKey();
+      body.innerHTML = `
+        <div style="display: flex; gap: 0.4rem; margin-bottom: 1rem;">
+          <button class="rank-tab active" data-tab="wood" style="flex:1; padding: 0.55rem; border-radius: 10px; font-weight: 800; font-size: 0.75rem; background: linear-gradient(135deg, var(--green-bright), var(--green)); color: #fff;">🪵 WOOD</button>
+          <button class="rank-tab" data-tab="brzl" style="flex:1; padding: 0.55rem; border-radius: 10px; font-weight: 800; font-size: 0.75rem; background: rgba(0,0,0,0.5); color: var(--mist); border: 1px solid rgba(220,38,38,0.3);">💰 BRZL</button>
+          <button class="rank-tab" data-tab="forest" style="flex:1; padding: 0.55rem; border-radius: 10px; font-weight: 800; font-size: 0.75rem; background: rgba(0,0,0,0.5); color: var(--mist); border: 1px solid rgba(220,38,38,0.3);">🌳 Forest</button>
+        </div>
+        <div style="font-size: 0.7rem; color: var(--mist); text-align: center; margin-bottom: 0.8rem;">
+          📅 Week: <b style="color: var(--gold-bright);">${currentWeek}</b> · Resets Monday UTC
+        </div>
+        <div id="rank-list" style="text-align: center; color: var(--mist); padding: 2rem 0;">
+          ⏳ Loading ranking...
+        </div>
+      `;
+
+      setTimeout(() => {
+        const tabs = document.querySelectorAll('.rank-tab');
+        tabs.forEach(t => {
+          t.onclick = () => {
+            tabs.forEach(tt => {
+              tt.classList.remove('active');
+              tt.style.background = 'rgba(0,0,0,0.5)';
+              tt.style.color = 'var(--mist)';
+              tt.style.border = '1px solid rgba(220,38,38,0.3)';
+            });
+            t.classList.add('active');
+            const tab = t.dataset.tab;
+            if (tab === 'wood') {
+              t.style.background = 'linear-gradient(135deg, var(--green-bright), var(--green))';
+              t.style.color = '#fff';
+              t.style.border = 'none';
+            } else if (tab === 'brzl') {
+              t.style.background = 'linear-gradient(135deg, var(--gold-bright), var(--brown-light))';
+              t.style.color = '#000';
+              t.style.border = 'none';
+            } else {
+              t.style.background = 'linear-gradient(135deg, var(--red-bright), var(--red))';
+              t.style.color = '#fff';
+              t.style.border = 'none';
+            }
+            fetchLeaderboard(tab);
+          };
+        });
+        fetchLeaderboard('wood');
+      }, 0);
+    }
     else if (type === 'stats') {
       const tree = CONFIG.TREES.find(t => t.id === state.activeTree);
       body.innerHTML = `
+        <div class="modal-section">
+          <div class="modal-label">Username</div>
+          <div class="modal-value">${state.username || '—'}</div>
+        </div>
         <div class="modal-section">
           <div class="modal-label">Wallet</div>
           <div style="font-family: monospace; font-size: 0.78rem; word-break: break-all; color: var(--cream);">${state.address || '—'}</div>
@@ -2003,6 +2197,10 @@
         <div class="modal-section">
           <div class="modal-label">In-game BRZL balance</div>
           <div class="modal-value" style="color: var(--gold-bright);">${fmt(state.internalBrzl)} BRZL</div>
+        </div>
+        <div class="modal-section">
+          <div class="modal-label">This week</div>
+          <div class="modal-value">${fmt(state.weeklyWood)} WOOD · ${fmt(state.weeklyBrzl)} BRZL withdrawn</div>
         </div>
         <div class="modal-section">
           <div class="modal-label">Current forest</div>
@@ -2063,6 +2261,18 @@
       const payload = result?.finalPayload || result?.data || result;
       state.address = payload.address || mk.walletAddress;
       if (!state.address) throw new Error('No address');
+
+      // Capturar username de World App (si existe)
+      try {
+        if (mk.user?.username) {
+          state.username = mk.user.username;
+        } else if (mk.getUserInfo) {
+          const userInfo = await mk.getUserInfo();
+          if (userInfo?.username) state.username = userInfo.username;
+        }
+      } catch (e) {
+        console.log('No username available');
+      }
 
       showToast('✓ Connected', 'success');
       await loadUser(state.address);
