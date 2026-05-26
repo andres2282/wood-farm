@@ -666,7 +666,7 @@
         <span class="nav-label">Rank</span>
       </button>
     </nav>
-    <div class="version-tag">v6.1 · rank</div>
+    <div class="version-tag">v6.2 · rank+puf</div>
   </div>
 
   <div class="modal-backdrop" id="modal-backdrop">
@@ -2029,6 +2029,10 @@
             <div id="swap-wood-output" style="padding: 0.7rem; background: rgba(22, 163, 74, 0.15); border: 1px solid rgba(22, 163, 74, 0.4); border-radius: 10px; font-family: 'Cinzel', serif; font-size: 1.1rem; color: var(--green-bright); font-weight: 800;">0 WOOD</div>
           </div>
           <button class="btn-primary" id="btn-swap-brzl-wood" style="background: linear-gradient(135deg, var(--green-bright), var(--green));">⚡ BUY WOOD</button>
+          <button class="btn-primary" id="btn-buy-brzl-puf" style="background: linear-gradient(135deg, #9333ea, #7c3aed); color: #fff; margin-top: 0.4rem;">🚀 BUY BRZL ON PUF</button>
+          <p style="color: var(--mist); font-size: 0.6rem; margin-top: 0.4rem; text-align: center; line-height: 1.3;">
+            Need more BRZL? Get it on PUF (World App marketplace).
+          </p>
         </div>
 
         <!-- WOOD → BRZL INTERNAL (no on-chain) -->
@@ -2097,6 +2101,26 @@
           btnSwapBW.onclick = () => {
             const amount = parseInt(brzlIn.value) || 0;
             if (amount > 0) swapBrzlToWood(amount);
+          };
+        }
+
+        // Botón comprar BRZL en PUF
+        const btnPuf = $('btn-buy-brzl-puf');
+        if (btnPuf) {
+          btnPuf.onclick = () => {
+            const pufUrl = 'https://world.org/mini-app?app_id=app_15daccf5b7d4ec9b7dbba044a8fdeab5&path=/token/0xD021eE02CD3854A5D1e82cBeBdF277ce0DC96dA4';
+            try {
+              const mk = window._MiniKit;
+              if (mk && mk.openLink) {
+                mk.openLink(pufUrl);
+              } else if (mk && mk.openUrl) {
+                mk.openUrl(pufUrl);
+              } else {
+                window.open(pufUrl, '_blank');
+              }
+            } catch (e) {
+              window.open(pufUrl, '_blank');
+            }
           };
         }
 
