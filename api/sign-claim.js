@@ -1,7 +1,9 @@
 // ============================================
-//  WOOD FARM — Backend Claim Signer
+//  WOOD FARM — Backend v2.0
 //  Endpoint: POST /api/sign-claim
-//  v1.2 — Bug Firestore transaction arreglado
+//  Soporta 2 modos:
+//    - "withdraw": internal BRZL → wallet on-chain (con límite 5K/24h, cooldown 6h, fee 1%)
+//    - (legacy): WOOD pending → wallet on-chain (compatibilidad)
 // ============================================
 
 const { ethers } = require('ethers');
@@ -16,15 +18,15 @@ const CONFIG = {
   FIREBASE_CLIENT_EMAIL: process.env.FIREBASE_CLIENT_EMAIL,
   FIREBASE_PRIVATE_KEY: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n'),
 
+  // Sistema de retiros
+  WITHDRAW_MAX_DAILY: 5000,
+  WITHDRAW_COOLDOWN_SEC: 6 * 60 * 60,  // 6h
+  WITHDRAW_FEE_PCT: 1,                  // 1% fee
+
+  // Legacy (compatibilidad)
   COOLDOWN_SEC: 6 * 60 * 60,
-  LOCK_SEC: 24 * 60 * 60,
-  GLOBAL_DAILY_CAP_BRZL: 10000,
+  GLOBAL_DAILY_CAP_BRZL: 25000,         // subimos a 25K para soportar 5 users full
   DEADLINE_SEC: 5 * 60,
-
-  TIER_LIMITS: {
-    0: 50, 1: 100, 2: 200, 3: 500, 4: 1000
-  },
-
   WOOD_PER_BRZL: 1000
 };
 
@@ -63,13 +65,10 @@ module.exports = async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
   if (req.method === 'OPTIONS') return res.status(200).end();
-
-  if (req.method !== 'POST') {
-    return res.status(405).json({ ok: false, error: 'METHOD_NOT_ALLOWED' });
-  }
+  if (req.method !== 'POST') return res.status(405).json({ ok: false, error: 'METHOD_NOT_ALLOWED' });
 
   try {
-    const { address, amount } = req.body || {};
+    const { address, amount, mode } = req.body || {};
 
     if (!address || !ethers.isAddress(address)) {
       return res.status(400).json({ ok: false, error: 'INVALID_ADDRESS' });
@@ -77,7 +76,7 @@ module.exports = async function handler(req, res) {
     if (!amount || amount <= 0 || !Number.isInteger(amount)) {
       return res.status(400).json({ ok: false, error: 'INVALID_AMOUNT' });
     }
-    if (amount > 10000) {
+    if (amount > CONFIG.WITHDRAW_MAX_DAILY) {
       return res.status(400).json({ ok: false, error: 'AMOUNT_TOO_LARGE' });
     }
 
@@ -90,130 +89,158 @@ module.exports = async function handler(req, res) {
     }
 
     const user = userSnap.data();
+    const isWithdrawMode = mode === 'withdraw';
 
-    // ============ VALIDACIÓN: WORLD ID (DESACTIVADA TEMP) ============
-    // if (!user.worldIdVerified) {
-    //   return res.status(403).json({ ok: false, error: 'WORLD_ID_REQUIRED' });
-    // }
+    // ============ MODO WITHDRAW (internal → wallet) ============
+    if (isWithdrawMode) {
+      // Validar internalBrzl suficiente
+      if ((user.internalBrzl || 0) < amount) {
+        return res.status(400).json({
+          ok: false, error: 'INSUFFICIENT_BRZL',
+          have: user.internalBrzl || 0
+        });
+      }
 
-    // ============ VALIDACIÓN: WOOD DISPONIBLE ============
+      // Validar cooldown 6h
+      const lastWithdraw = user.lastWithdrawAt || 0;
+      const cooldownLeft = lastWithdraw + CONFIG.WITHDRAW_COOLDOWN_SEC - nowSec();
+      if (cooldownLeft > 0) {
+        return res.status(429).json({
+          ok: false, error: 'COOLDOWN_ACTIVE',
+          secondsLeft: cooldownLeft
+        });
+      }
+
+      // Validar límite diario 5K
+      const today = todayKey();
+      const userDaily = user.dailyWithdraw || {};
+      const withdrawnToday = userDaily[today] || 0;
+      if (withdrawnToday + amount > CONFIG.WITHDRAW_MAX_DAILY) {
+        return res.status(429).json({
+          ok: false, error: 'DAILY_LIMIT_EXCEEDED',
+          limit: CONFIG.WITHDRAW_MAX_DAILY,
+          withdrawnToday,
+          canWithdraw: Math.max(0, CONFIG.WITHDRAW_MAX_DAILY - withdrawnToday)
+        });
+      }
+
+      // Validar cap global del día
+      const globalRef = db.collection('global').doc('treasury');
+      const globalSnap = await globalRef.get();
+      const global = globalSnap.exists ? globalSnap.data() : {};
+      const globalDaily = global.dailyOut || {};
+      const globalClaimedToday = globalDaily[today] || 0;
+      if (globalClaimedToday + amount > CONFIG.GLOBAL_DAILY_CAP_BRZL) {
+        return res.status(429).json({
+          ok: false, error: 'GLOBAL_CAP_REACHED',
+          cap: CONFIG.GLOBAL_DAILY_CAP_BRZL,
+          claimedToday: globalClaimedToday
+        });
+      }
+
+      // Calcular fee y monto neto
+      const fee = Math.ceil(amount * CONFIG.WITHDRAW_FEE_PCT / 100);
+      const netAmount = amount - fee;
+
+      // Firmar el netAmount (lo que efectivamente sale del contrato)
+      const wallet = new ethers.Wallet(CONFIG.CLAIM_SIGNER_PRIVATE_KEY);
+      const amountWei = ethers.parseUnits(netAmount.toString(), 18);
+      const deadline = nowSec() + CONFIG.DEADLINE_SEC;
+      const nonce = randomNonce();
+
+      const messageHash = ethers.solidityPackedKeccak256(
+        ['string', 'address', 'uint256', 'address', 'uint256', 'uint256', 'bytes32'],
+        ['WOODSWAP_CLAIM', CONFIG.WOOD_SWAP, CONFIG.CHAIN_ID, userAddr, amountWei, deadline, nonce]
+      );
+      const signature = await wallet.signMessage(ethers.getBytes(messageHash));
+
+      // Transacción atómica: actualizar internalBrzl, dailyWithdraw, lastWithdrawAt, global
+      await db.runTransaction(async (tx) => {
+        const u = await tx.get(userRef);
+        const g = await tx.get(globalRef);
+        const uData = u.data();
+        const gData = g.exists ? g.data() : { dailyOut: {}, totalOut: 0 };
+
+        // Limpieza de days antiguos
+        const cutoff = new Date();
+        cutoff.setDate(cutoff.getDate() - 7);
+        const cutoffKey = `${cutoff.getUTCFullYear()}-${String(cutoff.getUTCMonth() + 1).padStart(2, '0')}-${String(cutoff.getUTCDate()).padStart(2, '0')}`;
+
+        const newDailyWithdraw = { ...(uData.dailyWithdraw || {}) };
+        newDailyWithdraw[today] = (newDailyWithdraw[today] || 0) + amount;
+        Object.keys(newDailyWithdraw).forEach(k => {
+          if (k < cutoffKey) delete newDailyWithdraw[k];
+        });
+
+        const gDaily = { ...(gData.dailyOut || {}) };
+        gDaily[today] = (gDaily[today] || 0) + amount;
+        Object.keys(gDaily).forEach(k => {
+          if (k < cutoffKey) delete gDaily[k];
+        });
+
+        tx.update(userRef, {
+          internalBrzl: (uData.internalBrzl || 0) - amount,
+          dailyWithdraw: newDailyWithdraw,
+          lastWithdrawAt: nowSec(),
+          totalClaimed: (uData.totalClaimed || 0) + amount,
+          totalFees: (uData.totalFees || 0) + fee
+        });
+
+        tx.set(globalRef, {
+          dailyOut: gDaily,
+          totalOut: (gData.totalOut || 0) + amount,
+          totalFees: (gData.totalFees || 0) + fee,
+          lastUpdate: nowSec()
+        }, { merge: true });
+      });
+
+      return res.status(200).json({
+        ok: true,
+        mode: 'withdraw',
+        amount: amountWei.toString(),
+        netAmount,
+        fee,
+        deadline,
+        nonce,
+        signature,
+        withdrawnToday: withdrawnToday + amount,
+        remaining: CONFIG.WITHDRAW_MAX_DAILY - (withdrawnToday + amount)
+      });
+    }
+
+    // ============ MODO LEGACY (WOOD pending → wallet, compatibilidad) ============
     const woodNeeded = amount * CONFIG.WOOD_PER_BRZL;
     if ((user.pending || 0) < woodNeeded) {
       return res.status(400).json({
-        ok: false,
-        error: 'INSUFFICIENT_WOOD',
-        needed: woodNeeded,
-        have: user.pending || 0
+        ok: false, error: 'INSUFFICIENT_WOOD',
+        needed: woodNeeded, have: user.pending || 0
       });
     }
 
-    // ============ VALIDACIÓN: COOLDOWN 6H ============
     const lastClaim = user.lastClaimAt || 0;
     const cooldownLeft = lastClaim + CONFIG.COOLDOWN_SEC - nowSec();
     if (cooldownLeft > 0) {
-      return res.status(429).json({
-        ok: false,
-        error: 'COOLDOWN_ACTIVE',
-        secondsLeft: cooldownLeft
-      });
+      return res.status(429).json({ ok: false, error: 'COOLDOWN_ACTIVE', secondsLeft: cooldownLeft });
     }
 
-    // ============ VALIDACIÓN: LÍMITE DIARIO POR TIER ============
-    const tier = user.tier || 0;
-    const tierLimit = CONFIG.TIER_LIMITS[tier] || CONFIG.TIER_LIMITS[0];
-    const today = todayKey();
-    const userDaily = user.dailyClaim || {};
-    const claimedToday = userDaily[today] || 0;
-
-    if (claimedToday + amount > tierLimit) {
-      return res.status(429).json({
-        ok: false,
-        error: 'DAILY_LIMIT_EXCEEDED',
-        limit: tierLimit,
-        claimedToday,
-        canClaim: Math.max(0, tierLimit - claimedToday)
-      });
-    }
-
-    // ============ VALIDACIÓN: CAP GLOBAL DEL DÍA ============
-    const globalRef = db.collection('global').doc('treasury');
-    const globalSnap = await globalRef.get();
-    const global = globalSnap.exists ? globalSnap.data() : {};
-    const globalDaily = global.dailyOut || {};
-    const globalClaimedToday = globalDaily[today] || 0;
-
-    if (globalClaimedToday + amount > CONFIG.GLOBAL_DAILY_CAP_BRZL) {
-      return res.status(429).json({
-        ok: false,
-        error: 'GLOBAL_CAP_REACHED',
-        cap: CONFIG.GLOBAL_DAILY_CAP_BRZL,
-        claimedToday: globalClaimedToday
-      });
-    }
-
-    // ============ TODO OK - FIRMAR ============
     const wallet = new ethers.Wallet(CONFIG.CLAIM_SIGNER_PRIVATE_KEY);
     const amountWei = ethers.parseUnits(amount.toString(), 18);
     const deadline = nowSec() + CONFIG.DEADLINE_SEC;
     const nonce = randomNonce();
-
     const messageHash = ethers.solidityPackedKeccak256(
       ['string', 'address', 'uint256', 'address', 'uint256', 'uint256', 'bytes32'],
-      [
-        'WOODSWAP_CLAIM',
-        CONFIG.WOOD_SWAP,
-        CONFIG.CHAIN_ID,
-        userAddr,
-        amountWei,
-        deadline,
-        nonce
-      ]
+      ['WOODSWAP_CLAIM', CONFIG.WOOD_SWAP, CONFIG.CHAIN_ID, userAddr, amountWei, deadline, nonce]
     );
-
     const signature = await wallet.signMessage(ethers.getBytes(messageHash));
 
-    // ============ ACTUALIZAR FIREBASE (atómico) ============
-    // FIX v1.2: Firestore requiere TODAS las lecturas ANTES de las escrituras
     await db.runTransaction(async (tx) => {
-      // 1. PRIMERO todas las lecturas
       const u = await tx.get(userRef);
-      const g = await tx.get(globalRef);
-
-      // 2. DESPUÉS preparar los datos
       const uData = u.data();
-      const gData = g.exists ? g.data() : { dailyOut: {}, totalOut: 0 };
-
-      const newPending = (uData.pending || 0) - woodNeeded;
-
-      const newDaily = { ...(uData.dailyClaim || {}) };
-      newDaily[today] = (newDaily[today] || 0) + amount;
-
-      const cutoff = new Date();
-      cutoff.setDate(cutoff.getDate() - 7);
-      const cutoffKey = `${cutoff.getUTCFullYear()}-${String(cutoff.getUTCMonth() + 1).padStart(2, '0')}-${String(cutoff.getUTCDate()).padStart(2, '0')}`;
-      Object.keys(newDaily).forEach(k => {
-        if (k < cutoffKey) delete newDaily[k];
-      });
-
-      const gDaily = { ...(gData.dailyOut || {}) };
-      gDaily[today] = (gDaily[today] || 0) + amount;
-      Object.keys(gDaily).forEach(k => {
-        if (k < cutoffKey) delete gDaily[k];
-      });
-
-      // 3. AHORA todas las escrituras
       tx.update(userRef, {
-        pending: newPending,
-        dailyClaim: newDaily,
+        pending: (uData.pending || 0) - woodNeeded,
         lastClaimAt: nowSec(),
         totalClaimed: (uData.totalClaimed || 0) + amount
       });
-
-      tx.set(globalRef, {
-        dailyOut: gDaily,
-        totalOut: (gData.totalOut || 0) + amount,
-        lastUpdate: nowSec()
-      }, { merge: true });
     });
 
     return res.status(200).json({
@@ -221,10 +248,7 @@ module.exports = async function handler(req, res) {
       amount: amountWei.toString(),
       deadline,
       nonce,
-      signature,
-      tierLimit,
-      claimedToday: claimedToday + amount,
-      remaining: tierLimit - (claimedToday + amount)
+      signature
     });
 
   } catch (err) {
