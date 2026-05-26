@@ -666,7 +666,7 @@
         <span class="nav-label">Rank</span>
       </button>
     </nav>
-    <div class="version-tag">v6.3 · referrals</div>
+    <div class="version-tag">v6.4 · ref-in-rank</div>
   </div>
 
   <div class="modal-backdrop" id="modal-backdrop">
@@ -2346,6 +2346,44 @@
     else if (type === 'rank') {
       const currentWeek = getWeekKey();
       body.innerHTML = `
+        <!-- REFERRAL SECTION -->
+        <div style="background: linear-gradient(135deg, rgba(251,191,36,0.15), rgba(220,38,38,0.08)); border: 2px solid var(--gold-bright); border-radius: 14px; padding: 1rem; margin-bottom: 1rem;">
+          <div style="font-family: 'Cinzel', serif; font-weight: 900; color: var(--gold-bright); font-size: 1rem; text-align: center; margin-bottom: 0.6rem;">
+            🎁 YOUR REFERRAL CODE
+          </div>
+          <div style="display: flex; gap: 0.5rem; align-items: center;">
+            <div style="flex: 1; padding: 0.7rem; background: rgba(0,0,0,0.5); border: 1px solid var(--gold-bright); border-radius: 10px; font-family: monospace; font-weight: 900; font-size: 1.2rem; color: var(--gold-bright); text-align: center; letter-spacing: 0.1em;">
+              ${state.referralCode || '—'}
+            </div>
+            <button id="btn-copy-ref" style="padding: 0.7rem 0.9rem; background: var(--gold-bright); color: #000; border-radius: 10px; font-weight: 900; cursor: pointer; font-size: 0.85rem;">📋</button>
+          </div>
+          <div style="font-size: 0.65rem; color: var(--mist); margin-top: 0.6rem; line-height: 1.4; text-align: center;">
+            🎯 You get <b style="color: var(--gold-bright);">+5,000 WOOD</b> per friend who uses your code<br>
+            🎯 They get <b style="color: var(--gold-bright);">+2,500 WOOD</b> when entering it<br>
+            ⏱ Bonus paid when they reach 10K WOOD farmed
+          </div>
+          <div style="display: flex; gap: 0.5rem; margin-top: 0.7rem;">
+            <div style="flex: 1; text-align: center; padding: 0.5rem; background: rgba(0,0,0,0.4); border-radius: 8px;">
+              <div style="font-size: 0.6rem; color: var(--mist);">Invited</div>
+              <div style="font-weight: 900; color: var(--green-bright); font-size: 1.1rem;">${state.referralsCount || 0}</div>
+            </div>
+            <div style="flex: 1; text-align: center; padding: 0.5rem; background: rgba(0,0,0,0.4); border-radius: 8px;">
+              <div style="font-size: 0.6rem; color: var(--mist);">Earned</div>
+              <div style="font-weight: 900; color: var(--gold-bright); font-size: 1.1rem;">${fmt((state.referralsCount || 0) * CONFIG.REFERRAL_BONUS_INVITER)} 🪵</div>
+            </div>
+          </div>
+          ${state.referredBy ? `
+            <div style="margin-top: 0.7rem; padding: 0.5rem; background: rgba(22,163,74,0.15); border-radius: 8px; font-size: 0.7rem; text-align: center; color: var(--green-bright);">
+              ✓ Invited by: <b>${state.referredBy}</b>
+            </div>
+          ` : `
+            <button id="btn-enter-ref" style="width: 100%; margin-top: 0.7rem; padding: 0.6rem; background: linear-gradient(135deg, var(--green-bright), var(--green)); color: #fff; border-radius: 8px; font-weight: 800; font-size: 0.78rem;">
+              ➕ Enter referral code
+            </button>
+          `}
+        </div>
+
+        <!-- TABS DEL RANKING -->
         <div style="display: flex; gap: 0.4rem; margin-bottom: 1rem;">
           <button class="rank-tab active" data-tab="wood" style="flex:1; padding: 0.55rem; border-radius: 10px; font-weight: 800; font-size: 0.75rem; background: linear-gradient(135deg, var(--green-bright), var(--green)); color: #fff;">🪵 WOOD</button>
           <button class="rank-tab" data-tab="brzl" style="flex:1; padding: 0.55rem; border-radius: 10px; font-weight: 800; font-size: 0.75rem; background: rgba(0,0,0,0.5); color: var(--mist); border: 1px solid rgba(220,38,38,0.3);">💰 BRZL</button>
@@ -2388,48 +2426,17 @@
           };
         });
         fetchLeaderboard('wood');
+
+        // Bindings de referral buttons
+        const btnCopyR = $('btn-copy-ref');
+        if (btnCopyR) btnCopyR.onclick = () => copyReferralCode();
+        const btnEnterR = $('btn-enter-ref');
+        if (btnEnterR) btnEnterR.onclick = () => askReferralCode().then(() => renderModal('rank'));
       }, 0);
     }
     else if (type === 'stats') {
       const tree = CONFIG.TREES.find(t => t.id === state.activeTree);
       body.innerHTML = `
-        <!-- REFERRAL SECTION -->
-        <div style="background: linear-gradient(135deg, rgba(251,191,36,0.15), rgba(220,38,38,0.08)); border: 2px solid var(--gold-bright); border-radius: 14px; padding: 1rem; margin-bottom: 1rem;">
-          <div style="font-family: 'Cinzel', serif; font-weight: 900; color: var(--gold-bright); font-size: 1rem; text-align: center; margin-bottom: 0.5rem;">
-            🎁 YOUR REFERRAL CODE
-          </div>
-          <div style="display: flex; gap: 0.5rem; align-items: center;">
-            <div style="flex: 1; padding: 0.7rem; background: rgba(0,0,0,0.5); border: 1px solid var(--gold-bright); border-radius: 10px; font-family: monospace; font-weight: 900; font-size: 1.2rem; color: var(--gold-bright); text-align: center; letter-spacing: 0.1em;">
-              ${state.referralCode || '—'}
-            </div>
-            <button id="btn-copy-ref" style="padding: 0.7rem 0.9rem; background: var(--gold-bright); color: #000; border-radius: 10px; font-weight: 900; cursor: pointer; font-size: 0.85rem;">📋</button>
-          </div>
-          <div style="font-size: 0.65rem; color: var(--mist); margin-top: 0.6rem; line-height: 1.4; text-align: center;">
-            🎯 You get <b style="color: var(--gold-bright);">+5,000 WOOD</b> when friends use your code<br>
-            🎯 They get <b style="color: var(--gold-bright);">+2,500 WOOD</b> when they enter it<br>
-            ⏱ Bonus paid when they reach 10K WOOD farmed
-          </div>
-          <div style="display: flex; gap: 0.5rem; margin-top: 0.7rem;">
-            <div style="flex: 1; text-align: center; padding: 0.5rem; background: rgba(0,0,0,0.4); border-radius: 8px;">
-              <div style="font-size: 0.6rem; color: var(--mist);">Invited</div>
-              <div style="font-weight: 900; color: var(--green-bright); font-size: 1.1rem;">${state.referralsCount || 0}</div>
-            </div>
-            <div style="flex: 1; text-align: center; padding: 0.5rem; background: rgba(0,0,0,0.4); border-radius: 8px;">
-              <div style="font-size: 0.6rem; color: var(--mist);">Earned</div>
-              <div style="font-weight: 900; color: var(--gold-bright); font-size: 1.1rem;">${fmt((state.referralsCount || 0) * CONFIG.REFERRAL_BONUS_INVITER)} 🪵</div>
-            </div>
-          </div>
-          ${state.referredBy ? `
-            <div style="margin-top: 0.7rem; padding: 0.5rem; background: rgba(22,163,74,0.15); border-radius: 8px; font-size: 0.7rem; text-align: center; color: var(--green-bright);">
-              ✓ Invited by: <b>${state.referredBy}</b>
-            </div>
-          ` : `
-            <button id="btn-enter-ref" style="width: 100%; margin-top: 0.7rem; padding: 0.6rem; background: linear-gradient(135deg, var(--green-bright), var(--green)); color: #fff; border-radius: 8px; font-weight: 800; font-size: 0.78rem;">
-              ➕ Enter referral code
-            </button>
-          `}
-        </div>
-
         <div class="modal-section">
           <div class="modal-label">Wallet</div>
           <div style="font-family: monospace; font-size: 0.78rem; word-break: break-all; color: var(--cream);">${state.address || '—'}</div>
@@ -2470,15 +2477,15 @@
           <div class="modal-label">Idle production</div>
           <div class="modal-value">${fmt(getIdleRate())} WOOD/sec</div>
         </div>
+        <div class="modal-section">
+          <div class="modal-label">My referral code</div>
+          <div class="modal-value" style="color: var(--gold-bright); font-family: monospace;">${state.referralCode || '—'}</div>
+        </div>
+        <div class="modal-section">
+          <div class="modal-label">Referrals made</div>
+          <div class="modal-value">${state.referralsCount || 0}</div>
+        </div>
       `;
-
-      // Bind buttons
-      setTimeout(() => {
-        const btnCopy = $('btn-copy-ref');
-        if (btnCopy) btnCopy.onclick = () => copyReferralCode();
-        const btnEnter = $('btn-enter-ref');
-        if (btnEnter) btnEnter.onclick = () => askReferralCode().then(() => renderModal('stats'));
-      }, 0);
     }
     $('modal-backdrop').classList.add('show');
   }
