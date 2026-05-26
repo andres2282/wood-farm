@@ -666,7 +666,7 @@
         <span class="nav-label">Stats</span>
       </button>
     </nav>
-    <div class="version-tag">v5.0 · meme</div>
+    <div class="version-tag">v6.0 · levels</div>
   </div>
 
   <div class="modal-backdrop" id="modal-backdrop">
@@ -736,6 +736,23 @@
     ENERGY_REGEN_MS: 3000,
     WOOD_PER_LEVEL: 1000000,
     CLAIM_MIN: 100,
+    BASE_TAP: 1,  // tap base sin mejoras
+
+    // Sistema de niveles
+    UPGRADE_PRICE_MULT: 5,    // x5 por nivel
+    MAX_LEVEL_WOOD: 10,
+    MAX_LEVEL_BRZL: 5,
+    MAX_LEVEL_WLD: 1,
+
+    // Sistema de durabilidad (segundos)
+    DUR_WOOD_SEC: 7 * 24 * 60 * 60,    // 7 días
+    DUR_BRZL_SEC: 14 * 24 * 60 * 60,   // 14 días
+    DUR_WLD_SEC: 0,                     // permanente
+
+    // Retiro on-chain
+    WITHDRAW_MAX_DAILY: 5000,           // 5000 BRZL/24h
+    WITHDRAW_COOLDOWN_SEC: 6 * 60 * 60, // 6h cooldown
+    WITHDRAW_FEE_PCT: 1,                // 1% fee
     FORESTS: [
       { id: 1, name: 'GREEN FOREST' },
       { id: 2, name: 'AUTUMN FOREST' },
@@ -748,18 +765,18 @@
       { id: 9, name: 'DIVINE FOREST' }
     ],
     TREES: [
-      { id: 1,  name: 'Green Oak',        img: 'a1.jpeg',  woodTap: 10,   rarity: 'common',    price: 0,         currency: 'wood' },
-      { id: 2,  name: 'Pine',             img: 'a2.jpeg',  woodTap: 20,   rarity: 'common',    price: 5000,      currency: 'wood' },
-      { id: 3,  name: 'Birch',            img: 'a3.jpeg',  woodTap: 30,   rarity: 'uncommon',  price: 20000,     currency: 'wood' },
-      { id: 4,  name: 'Cedar',            img: 'a4.jpeg',  woodTap: 50,   rarity: 'rare',      price: 100000,    currency: 'wood' },
-      { id: 5,  name: 'Tropical Palm',    img: 'a5.jpeg',  woodTap: 80,   rarity: 'epic',      price: 500000,    currency: 'wood' },
-      { id: 6,  name: 'Golden Tree',      img: 'a6.jpeg',  woodTap: 150,  rarity: 'legendary', price: 2000000,   currency: 'wood' },
-      { id: 7,  name: 'Crystal Tree',     img: 'a7.jpeg',  woodTap: 100,  rarity: 'epic',      price: 800000,    currency: 'wood' },
-      { id: 8,  name: 'Sacred Cherry',    img: 'a8.jpeg',  woodTap: 100,  rarity: 'epic',      price: 800000,    currency: 'wood' },
-      { id: 9,  name: 'Spirit Tree',      img: 'a9.jpeg',  woodTap: 200,  rarity: 'legendary', price: 5000000,   currency: 'wood' },
-      { id: 10, name: 'Igneous Tree',     img: 'a10.jpeg', woodTap: 200,  rarity: 'legendary', price: 5000000,   currency: 'wood' },
-      { id: 11, name: 'Lunar Tree',       img: 'a11.jpeg', woodTap: 250,  rarity: 'mythic',    price: 10000000,  currency: 'wood' },
-      { id: 12, name: 'Yggdrasil',        img: 'a12.jpeg', woodTap: 500,  rarity: 'divine',    price: 50000000,  currency: 'wood' }
+      { id: 1,  name: 'Green Oak',        img: 'a1.jpeg',  woodTap: 0,    rarity: 'common',    price: 0,         currency: 'wood' },
+      { id: 2,  name: 'Pine',             img: 'a2.jpeg',  woodTap: 1,    rarity: 'common',    price: 5000,      currency: 'wood' },
+      { id: 3,  name: 'Birch',            img: 'a3.jpeg',  woodTap: 2,    rarity: 'uncommon',  price: 20000,     currency: 'wood' },
+      { id: 4,  name: 'Cedar',            img: 'a4.jpeg',  woodTap: 4,    rarity: 'rare',      price: 100000,    currency: 'wood' },
+      { id: 5,  name: 'Tropical Palm',    img: 'a5.jpeg',  woodTap: 7,    rarity: 'epic',      price: 500000,    currency: 'wood' },
+      { id: 6,  name: 'Golden Tree',      img: 'a6.jpeg',  woodTap: 14,   rarity: 'legendary', price: 2000000,   currency: 'wood' },
+      { id: 7,  name: 'Crystal Tree',     img: 'a7.jpeg',  woodTap: 9,    rarity: 'epic',      price: 800000,    currency: 'wood' },
+      { id: 8,  name: 'Sacred Cherry',    img: 'a8.jpeg',  woodTap: 9,    rarity: 'epic',      price: 800000,    currency: 'wood' },
+      { id: 9,  name: 'Spirit Tree',      img: 'a9.jpeg',  woodTap: 19,   rarity: 'legendary', price: 5000000,   currency: 'wood' },
+      { id: 10, name: 'Igneous Tree',     img: 'a10.jpeg', woodTap: 19,   rarity: 'legendary', price: 5000000,   currency: 'wood' },
+      { id: 11, name: 'Lunar Tree',       img: 'a11.jpeg', woodTap: 24,   rarity: 'mythic',    price: 10000000,  currency: 'wood' },
+      { id: 12, name: 'Yggdrasil',        img: 'a12.jpeg', woodTap: 49,   rarity: 'divine',    price: 50000000,  currency: 'wood' }
     ],
     UPGRADES: [
       // Basic Upgrades (WOOD)
@@ -792,15 +809,19 @@
   const state = {
     address: null,
     forestId: 1,
-    activeTree: 1,           // ID del árbol equipado
-    ownedTrees: [1],         // árboles desbloqueados
-    ownedUpgrades: [],       // mejoras desbloqueadas
+    activeTree: 1,
+    ownedTrees: [1],
+    ownedUpgrades: [],
+    upgradeData: {},         // NUEVO: { upgradeId: { level: N, purchasedAt: timestamp } }
     pending: 0,
     totalFarmed: 0,
     onchain: 0,
+    internalBrzl: 0,         // NUEVO: BRZL acumulado dentro de la app
     tier: 0,
     energy: 100,
-    lastEnergyTs: Date.now()
+    lastEnergyTs: Date.now(),
+    lastWithdrawAt: 0,       // NUEVO: timestamp último retiro on-chain
+    dailyWithdraw: {}        // NUEVO: { "YYYY-MM-DD": cantidad }
   };
 
   const $ = id => document.getElementById(id);
@@ -818,23 +839,86 @@
     return n.toString();
   }
 
-  // ============ EFECTOS DE MEJORAS ============
+  // ============ SISTEMA DE NIVELES Y DURABILIDAD ============
+
+  // Devuelve precio para subir de un nivel a otro
+  function getUpgradePrice(up, targetLevel) {
+    // Nivel 1 = precio base; cada nivel siguiente x5
+    return up.price * Math.pow(CONFIG.UPGRADE_PRICE_MULT, targetLevel - 1);
+  }
+
+  // Devuelve nivel máximo según moneda
+  function getMaxLevel(up) {
+    if (up.currency === 'wood') return CONFIG.MAX_LEVEL_WOOD;
+    if (up.currency === 'brzl') return CONFIG.MAX_LEVEL_BRZL;
+    return CONFIG.MAX_LEVEL_WLD;
+  }
+
+  // Devuelve duración en segundos según moneda
+  function getDuration(up) {
+    if (up.currency === 'wood') return CONFIG.DUR_WOOD_SEC;
+    if (up.currency === 'brzl') return CONFIG.DUR_BRZL_SEC;
+    return CONFIG.DUR_WLD_SEC; // 0 = permanente
+  }
+
+  // Devuelve % de vida actual (0-100) de una mejora
+  function getDurabilityPct(upId) {
+    const data = state.upgradeData?.[upId];
+    if (!data) return 0;
+    const up = CONFIG.UPGRADES.find(u => u.id === upId);
+    if (!up) return 0;
+    const dur = getDuration(up);
+    if (dur === 0) return 100; // permanente
+
+    const elapsed = (Date.now() / 1000) - data.purchasedAt;
+    const pct = Math.max(0, Math.min(100, 100 * (1 - elapsed / dur)));
+    return pct;
+  }
+
+  // ¿Está la mejora viva (no expirada)?
+  function isUpgradeAlive(upId) {
+    return getDurabilityPct(upId) > 0;
+  }
+
+  // Costo de reparar = (100% - vida%) × precio del nivel actual
+  function getRepairCost(upId) {
+    const data = state.upgradeData?.[upId];
+    if (!data) return 0;
+    const up = CONFIG.UPGRADES.find(u => u.id === upId);
+    if (!up) return 0;
+    const lvl = data.level || 1;
+    const fullPrice = getUpgradePrice(up, lvl);
+    const lifePct = getDurabilityPct(upId);
+    return Math.ceil(fullPrice * (1 - lifePct / 100));
+  }
+
+  // Suma de efectos lineales considerando NIVELES y DURABILIDAD
   function getEffectSum(key) {
     let sum = 0;
     state.ownedUpgrades.forEach(id => {
       const up = CONFIG.UPGRADES.find(u => u.id === id);
-      if (up && up.effectKey === key) sum += up.value;
+      if (!up || up.effectKey !== key) return;
+      if (!isUpgradeAlive(id)) return; // si está rota, no aporta
+      const lvl = state.upgradeData?.[id]?.level || 1;
+      sum += up.value * lvl; // cada nivel suma 1x el valor base
     });
     return sum;
   }
+
+  // Multiplicador (x2, x3) considerando NIVELES y DURABILIDAD
   function getEffectMult(key) {
     let mult = 1;
     state.ownedUpgrades.forEach(id => {
       const up = CONFIG.UPGRADES.find(u => u.id === id);
-      if (up && up.effectKey === key) mult *= up.value;
+      if (!up || up.effectKey !== key) return;
+      if (!isUpgradeAlive(id)) return;
+      const lvl = state.upgradeData?.[id]?.level || 1;
+      // Para multiplicadores, cada nivel suma +1 al multi (x2→x2+lvl-1)
+      mult *= (up.value + (lvl - 1));
     });
     return mult;
   }
+
   function getEnergyMax() {
     return CONFIG.ENERGY_MAX_BASE + getEffectSum('energyMax');
   }
@@ -844,13 +928,15 @@
   }
   function getWoodPerTap() {
     const tree = CONFIG.TREES.find(t => t.id === state.activeTree);
-    const base = tree ? tree.woodTap : 1;
+    const baseTree = tree ? tree.woodTap : 1;
+    const baseTap = CONFIG.BASE_TAP;
     const bonus = getEffectSum('tapBonus');
     const mult = getEffectMult('tapMult');
-    return (base + bonus) * mult;
+    // Base = tap base (1) + WOOD que da el árbol activo + bonos de mejoras
+    return (baseTap + baseTree + bonus) * mult;
   }
   function getIdleRate() {
-    return getEffectSum('idleRate'); // WOOD por segundo
+    return getEffectSum('idleRate');
   }
 
   // ============ FIREBASE ============
@@ -867,10 +953,20 @@
         state.activeTree = d.activeTree ?? 1;
         state.ownedTrees = d.ownedTrees ?? [1];
         state.ownedUpgrades = d.ownedUpgrades ?? [];
+        state.upgradeData = d.upgradeData ?? {};
         state.pending = d.pending ?? 0;
         state.totalFarmed = d.totalFarmed ?? 0;
         state.tier = d.tier ?? 0;
+        state.internalBrzl = d.internalBrzl ?? 0;
         state.lastEnergyTs = d.lastEnergyTs ?? Date.now();
+        state.lastWithdrawAt = d.lastWithdrawAt ?? 0;
+        state.dailyWithdraw = d.dailyWithdraw ?? {};
+        // Migrar mejoras viejas (sin upgradeData): asumir Lvl 1, recién compradas
+        state.ownedUpgrades.forEach(id => {
+          if (!state.upgradeData[id]) {
+            state.upgradeData[id] = { level: 1, purchasedAt: Math.floor(Date.now() / 1000) };
+          }
+        });
         // Calcular WOOD idle ganado mientras estuvo afuera
         const idleRate = getIdleRate();
         if (idleRate > 0) {
@@ -891,8 +987,12 @@
           address: address.toLowerCase(),
           energy: 100, forestId: 1,
           activeTree: 1, ownedTrees: [1], ownedUpgrades: [],
+          upgradeData: {},
           pending: 1000, totalFarmed: 1000, tier: 0,
+          internalBrzl: 0,
           lastEnergyTs: Date.now(),
+          lastWithdrawAt: 0,
+          dailyWithdraw: {},
           createdAt: serverTimestamp()
         });
         // Bono de bienvenida en local
@@ -916,8 +1016,13 @@
           energy: state.energy, forestId: state.forestId,
           activeTree: state.activeTree, ownedTrees: state.ownedTrees,
           ownedUpgrades: state.ownedUpgrades,
+          upgradeData: state.upgradeData,
           pending: state.pending, totalFarmed: state.totalFarmed,
-          tier: state.tier, lastEnergyTs: state.lastEnergyTs,
+          tier: state.tier,
+          internalBrzl: state.internalBrzl,
+          lastEnergyTs: state.lastEnergyTs,
+          lastWithdrawAt: state.lastWithdrawAt,
+          dailyWithdraw: state.dailyWithdraw,
           updatedAt: serverTimestamp()
         });
       } catch (e) { console.error('save:', e); }
@@ -926,11 +1031,35 @@
 
   // ============ GAME LOGIC ============
   function getCurrentForest() { return CONFIG.FORESTS[state.forestId - 1]; }
+
+  // Mapeo bosque → árbol nativo (auto-equipar al subir)
+  const FOREST_TO_TREE = {
+    1: 1,   // Green Forest → Green Oak
+    2: 2,   // Autumn → Pine
+    3: 3,   // Frozen → Birch
+    4: 4,   // Mystic → Cedar
+    5: 5,   // Sacred → Tropical Palm
+    6: 7,   // Celestial → Crystal Tree
+    7: 6,   // Eternal → Golden Tree
+    8: 8,   // Enchanted → Sacred Cherry
+    9: 12   // Divine → Yggdrasil
+  };
+
   function checkLevelUp() {
     const needed = state.forestId * CONFIG.WOOD_PER_LEVEL;
     if (state.totalFarmed >= needed && state.forestId < CONFIG.FORESTS.length) {
       state.forestId++;
       const f = getCurrentForest();
+      // Desbloquear y equipar árbol nativo del nuevo bosque
+      const nativeTreeId = FOREST_TO_TREE[state.forestId];
+      if (nativeTreeId) {
+        if (!state.ownedTrees.includes(nativeTreeId)) {
+          state.ownedTrees.push(nativeTreeId);
+          const nativeTree = CONFIG.TREES.find(t => t.id === nativeTreeId);
+          setTimeout(() => showToast(`🌳 Unlocked: ${nativeTree.name}!`, 'success'), 1500);
+        }
+        state.activeTree = nativeTreeId;
+      }
       showToast(`🎉 You leveled up to ${f.name}!`, 'success');
       updateForestUI();
     }
@@ -1115,8 +1244,8 @@
     const up = CONFIG.UPGRADES.find(u => u.id === upgradeId);
     if (!up) return;
     if (state.ownedUpgrades.includes(upgradeId)) {
-      showToast('You already have this upgrade', '');
-      return;
+      // Si ya la tiene, intentar subir nivel
+      return upgradeLevel(upgradeId);
     }
 
     // Compras con WOOD farmeado (off-chain)
@@ -1127,10 +1256,13 @@
       }
       state.pending -= up.price;
       state.ownedUpgrades.push(upgradeId);
+      state.upgradeData[upgradeId] = { level: 1, purchasedAt: Math.floor(Date.now() / 1000) };
       updateGameUI();
-      showToast(`⚙️ ${up.name} activated!`, 'success');
+      showToast(`⚙️ ${up.name} Lvl 1 activated!`, 'success');
       scheduleSave();
-      closeModal();
+      // Refrescar modal
+      const modal = document.querySelector('.modal-bg.show');
+      if (modal) renderModal('upgrades');
       return;
     }
 
@@ -1145,7 +1277,6 @@
       const tokenAddr = up.currency === 'wld' ? CONFIG.WLD_TOKEN : CONFIG.BRZL_TOKEN;
       const amount = ethers.parseUnits(up.price.toString(), 18).toString();
 
-      // transfer(treasury, amount)
       const transferData = '0xa9059cbb' +
         CONFIG.TREASURY.slice(2).padStart(64, '0').toLowerCase() +
         BigInt(amount).toString(16).padStart(64, '0');
@@ -1163,14 +1294,143 @@
         return;
       }
 
-      // Activar mejora
       state.ownedUpgrades.push(upgradeId);
+      state.upgradeData[upgradeId] = { level: 1, purchasedAt: Math.floor(Date.now() / 1000) };
       updateGameUI();
-      showToast(`⚙️ ${up.name} purchased!`, 'success');
+      showToast(`⚙️ ${up.name} Lvl 1 purchased!`, 'success');
       scheduleSave();
-      closeModal();
+      const modal = document.querySelector('.modal-bg.show');
+      if (modal) renderModal('upgrades');
     } catch (e) {
       console.error('buyUpgrade:', e);
+      showToast('Error: ' + (e.message || '').slice(0, 40), 'error');
+    }
+  }
+
+  // Subir de nivel una mejora ya comprada
+  async function upgradeLevel(upgradeId) {
+    const up = CONFIG.UPGRADES.find(u => u.id === upgradeId);
+    if (!up) return;
+    const data = state.upgradeData[upgradeId];
+    if (!data) return;
+
+    const currentLvl = data.level;
+    const maxLvl = getMaxLevel(up);
+    if (currentLvl >= maxLvl) {
+      showToast(`Max level (${maxLvl}) reached!`, '');
+      return;
+    }
+
+    const nextLvl = currentLvl + 1;
+    const price = getUpgradePrice(up, nextLvl);
+
+    if (up.currency === 'wood') {
+      if (state.pending < price) {
+        showToast(`You need ${fmt(price)} WOOD`, 'error');
+        return;
+      }
+      state.pending -= price;
+      data.level = nextLvl;
+      data.purchasedAt = Math.floor(Date.now() / 1000); // resetea durabilidad
+      updateGameUI();
+      showToast(`⬆️ ${up.name} Lvl ${nextLvl}!`, 'success');
+      scheduleSave();
+      const modal = document.querySelector('.modal-bg.show');
+      if (modal) renderModal('upgrades');
+      return;
+    }
+
+    // BRZL/WLD: pago on-chain
+    const mk = window._MiniKit;
+    if (!mk || !mk.isInstalled()) {
+      showToast('Open in World App', 'error');
+      return;
+    }
+    try {
+      showToast('Processing upgrade...', '');
+      const tokenAddr = up.currency === 'wld' ? CONFIG.WLD_TOKEN : CONFIG.BRZL_TOKEN;
+      const amount = ethers.parseUnits(price.toString(), 18).toString();
+      const transferData = '0xa9059cbb' +
+        CONFIG.TREASURY.slice(2).padStart(64, '0').toLowerCase() +
+        BigInt(amount).toString(16).padStart(64, '0');
+      const res = await mk.sendTransaction({
+        chainId: 480, transactions: [{ to: tokenAddr, data: transferData }]
+      });
+      const payload = res?.finalPayload || res?.data || res;
+      if (payload?.status === 'error' || payload?.error_code) {
+        showToast('Upgrade cancelled', 'error');
+        return;
+      }
+      data.level = nextLvl;
+      data.purchasedAt = Math.floor(Date.now() / 1000);
+      updateGameUI();
+      showToast(`⬆️ ${up.name} Lvl ${nextLvl}!`, 'success');
+      scheduleSave();
+      const modal = document.querySelector('.modal-bg.show');
+      if (modal) renderModal('upgrades');
+    } catch (e) {
+      console.error('upgradeLevel:', e);
+      showToast('Error: ' + (e.message || '').slice(0, 40), 'error');
+    }
+  }
+
+  // Reparar mejora (proporcional al desgaste)
+  async function repairUpgrade(upgradeId) {
+    const up = CONFIG.UPGRADES.find(u => u.id === upgradeId);
+    if (!up) return;
+    const data = state.upgradeData[upgradeId];
+    if (!data) return;
+
+    const cost = getRepairCost(upgradeId);
+    if (cost <= 0) {
+      showToast('Already at 100% health', '');
+      return;
+    }
+
+    if (up.currency === 'wood') {
+      if (state.pending < cost) {
+        showToast(`You need ${fmt(cost)} WOOD`, 'error');
+        return;
+      }
+      state.pending -= cost;
+      data.purchasedAt = Math.floor(Date.now() / 1000); // resetea durabilidad a 100%
+      updateGameUI();
+      showToast(`🔧 ${up.name} repaired!`, 'success');
+      scheduleSave();
+      const modal = document.querySelector('.modal-bg.show');
+      if (modal) renderModal('upgrades');
+      return;
+    }
+
+    // BRZL: pago on-chain
+    const mk = window._MiniKit;
+    if (!mk || !mk.isInstalled()) {
+      showToast('Open in World App', 'error');
+      return;
+    }
+    try {
+      showToast('Processing repair...', '');
+      const tokenAddr = up.currency === 'wld' ? CONFIG.WLD_TOKEN : CONFIG.BRZL_TOKEN;
+      const amount = ethers.parseUnits(cost.toString(), 18).toString();
+      const transferData = '0xa9059cbb' +
+        CONFIG.TREASURY.slice(2).padStart(64, '0').toLowerCase() +
+        BigInt(amount).toString(16).padStart(64, '0');
+      const res = await mk.sendTransaction({
+        chainId: 480, transactions: [{ to: tokenAddr, data: transferData }]
+      });
+      const payload = res?.finalPayload || res?.data || res;
+      if (payload?.status === 'error' || payload?.error_code) {
+        showToast('Repair cancelled', 'error');
+        return;
+      }
+      data.purchasedAt = Math.floor(Date.now() / 1000);
+      updateGameUI();
+      showToast(`🔧 ${up.name} repaired!`, 'success');
+      scheduleSave();
+      const modal = document.querySelector('.modal-bg.show');
+      if (modal) renderModal('upgrades');
+    } catch (e) {
+      console.error('repairUpgrade:', e);
       showToast('Error: ' + (e.message || '').slice(0, 40), 'error');
     }
   }
@@ -1275,7 +1535,33 @@
   }
 
   // ============ SWAP WOOD → BRZL (con backend) ============
-  async function claimWoodToBrzl(brzlAmount) {
+  // ============ WOOD → BRZL INTERNAL (no on-chain, sin límite) ============
+  async function convertToInternal(brzlAmount) {
+    if (!state.address) {
+      showToast('Connect wallet first', 'error');
+      return;
+    }
+    if (brzlAmount <= 0 || !Number.isInteger(brzlAmount)) {
+      showToast('Invalid amount', 'error');
+      return;
+    }
+    const woodNeeded = brzlAmount * CONFIG.SWAP_RATIO;
+    if (state.pending < woodNeeded) {
+      showToast(`You need ${fmt(woodNeeded)} WOOD`, 'error');
+      return;
+    }
+
+    // Operación local: descontar WOOD, sumar a internalBrzl
+    state.pending -= woodNeeded;
+    state.internalBrzl += brzlAmount;
+    updateGameUI();
+    scheduleSave();
+    showToast(`💎 +${brzlAmount} BRZL in your in-game balance`, 'success');
+    renderModal('swap'); // refrescar modal con saldos actualizados
+  }
+
+  // ============ WITHDRAW: internal BRZL → WALLET on-chain (con límite 5K/24h) ============
+  async function withdrawToWallet(brzlAmount) {
     if (!state.address) {
       showToast('Connect wallet first', 'error');
       return;
@@ -1285,22 +1571,44 @@
       showToast('Open in World App', 'error');
       return;
     }
-    const woodNeeded = brzlAmount * CONFIG.SWAP_RATIO;
-    if (state.pending < woodNeeded) {
-      showToast(`You need ${fmt(woodNeeded)} farmed WOOD`, 'error');
+    if (brzlAmount <= 0 || !Number.isInteger(brzlAmount)) {
+      showToast('Invalid amount', 'error');
+      return;
+    }
+    if (brzlAmount > state.internalBrzl) {
+      showToast('Not enough in-game BRZL', 'error');
+      return;
+    }
+    if (brzlAmount > CONFIG.WITHDRAW_MAX_DAILY) {
+      showToast(`Max ${CONFIG.WITHDRAW_MAX_DAILY} BRZL per withdraw`, 'error');
+      return;
+    }
+
+    // Validaciones locales rápidas (el backend va a re-validar)
+    const nowSec = Math.floor(Date.now() / 1000);
+    const cooldownLeft = state.lastWithdrawAt + CONFIG.WITHDRAW_COOLDOWN_SEC - nowSec;
+    if (cooldownLeft > 0) {
+      showToast(`⏱ Wait ${Math.ceil(cooldownLeft / 60)} min`, 'error');
+      return;
+    }
+
+    const todayKey = new Date().toISOString().slice(0, 10);
+    const withdrawnToday = state.dailyWithdraw?.[todayKey] || 0;
+    if (withdrawnToday + brzlAmount > CONFIG.WITHDRAW_MAX_DAILY) {
+      showToast(`Daily limit. Remaining: ${CONFIG.WITHDRAW_MAX_DAILY - withdrawnToday} BRZL`, 'error');
       return;
     }
 
     try {
       showToast('Requesting backend signature...', '');
 
-      // 1) Llamar al backend para obtener la firma
       const resp = await fetch(`${CONFIG.BACKEND_URL}/api/sign-claim`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           address: state.address,
-          amount: brzlAmount
+          amount: brzlAmount,
+          mode: 'withdraw'  // NUEVO: distinguir del swap viejo
         })
       });
       const data = await resp.json();
@@ -1309,37 +1617,30 @@
         const errMessages = {
           INVALID_ADDRESS: 'Invalid address',
           INVALID_AMOUNT: 'Invalid amount',
-          AMOUNT_TOO_LARGE: 'Amount too large (max 10K)',
+          AMOUNT_TOO_LARGE: `Max ${CONFIG.WITHDRAW_MAX_DAILY} BRZL per withdraw`,
           USER_NOT_FOUND: 'User not registered',
           WORLD_ID_REQUIRED: '⚠️ Verify World ID first',
-          INSUFFICIENT_WOOD: 'Insufficient WOOD',
+          INSUFFICIENT_BRZL: 'Not enough in-game BRZL',
           COOLDOWN_ACTIVE: `⏱ Wait ${Math.ceil((data.secondsLeft || 0) / 60)} min`,
-          DAILY_LIMIT_EXCEEDED: `Tier limit reached (max ${data.limit || '?'} BRZL/day)`,
-          WOOD_LOCKED: '🔒 WOOD locked 24h',
+          DAILY_LIMIT_EXCEEDED: `Daily limit (5K BRZL)`,
           GLOBAL_CAP_REACHED: 'Treasury empty today'
         };
         showToast(errMessages[data.error] || data.error || 'Backend error', 'error');
         return;
       }
 
-      // 2) Tenemos firma → enviar tx al contrato
       showToast('Confirm in your wallet...', '');
       const claimSelector = ethers.id('claimBrzl(uint256,uint256,bytes32,bytes)').slice(0, 10);
-
-      // Codificar parámetros
       const abiCoder = ethers.AbiCoder.defaultAbiCoder();
       const params = abiCoder.encode(
         ['uint256', 'uint256', 'bytes32', 'bytes'],
         [data.amount, data.deadline, data.nonce, data.signature]
       ).slice(2);
-
       const claimData = claimSelector + params;
 
       const res = await mk.sendTransaction({
         chainId: 480,
-        transactions: [
-          { to: CONFIG.WOOD_SWAP, data: claimData }
-        ]
+        transactions: [{ to: CONFIG.WOOD_SWAP, data: claimData }]
       });
       const payload = res?.finalPayload || res?.data || res;
       if (payload?.status === 'error' || payload?.error_code) {
@@ -1347,15 +1648,22 @@
         return;
       }
 
-      // 3) Descontar WOOD localmente
-      state.pending -= woodNeeded;
+      // Operación exitosa: actualizar local (backend ya actualizó Firebase)
+      // El user recibió (amount - fee) en wallet. Internamente quitamos amount completo.
+      state.internalBrzl -= brzlAmount;
+      state.lastWithdrawAt = nowSec;
+      if (!state.dailyWithdraw) state.dailyWithdraw = {};
+      state.dailyWithdraw[todayKey] = (state.dailyWithdraw[todayKey] || 0) + brzlAmount;
       updateGameUI();
       scheduleSave();
       loadBalances();
-      showToast(`💰 +${brzlAmount} BRZL in your wallet`, 'success');
-      closeModal();
+
+      const fee = Math.ceil(brzlAmount * CONFIG.WITHDRAW_FEE_PCT / 100);
+      const net = brzlAmount - fee;
+      showToast(`🚀 +${net} BRZL in your wallet (fee: ${fee})`, 'success');
+      renderModal('swap');
     } catch (e) {
-      console.error('claimWoodToBrzl:', e);
+      console.error('withdrawToWallet:', e);
       showToast('Error: ' + (e.message || '').slice(0, 40), 'error');
     }
   }
@@ -1372,6 +1680,11 @@
     if (item.currency === 'wld')  return `${item.price} WLD`;
     if (item.currency === 'brzl') return `${fmt(item.price)} BRZL`;
     return '?';
+  }
+
+  function renderModal(type) {
+    // Re-renderiza solo el body del modal sin animación
+    openModal(type);
   }
 
   function openModal(type) {
@@ -1419,33 +1732,91 @@
     else if (type === 'upgrades') {
       body.innerHTML = `
         <p style="color: var(--mist); font-size: 0.78rem; margin-bottom: 1rem; line-height: 1.5;">
-          Permanent upgrades for your farm. Basic ones cost WOOD, advanced ones cost BRZL/WLD.
+          Upgrades have <b>levels</b> (WOOD: 10, BRZL: 5, WLD: 1) and <b>durability</b> (WOOD: 7d, BRZL: 14d, WLD: ∞).
         </p>
         <div class="item-grid">
           ${CONFIG.UPGRADES.map(u => {
             const owned = state.ownedUpgrades.includes(u.id);
-            let canBuy = !owned;
-            if (canBuy && u.currency === 'wood') canBuy = state.pending >= u.price;
+            const data = state.upgradeData?.[u.id];
+            const lvl = data?.level || 0;
+            const maxLvl = getMaxLevel(u);
+            const lifePct = owned ? getDurabilityPct(u.id) : 100;
+            const isBroken = owned && lifePct <= 0;
+            const isPerm = u.currency === 'wld';
+            const canMaxLvl = lvl >= maxLvl;
+
+            // Calcular precios
+            let priceNow = u.price;       // precio actual (compra o upgrade)
+            let btnLabel = '';
+            let btnDisabled = false;
+            let btnAction = '';
+
+            if (!owned) {
+              btnLabel = u.price === 0 ? 'FREE' : priceLabel(u);
+              btnAction = 'buy';
+              if (u.currency === 'wood' && state.pending < u.price) btnDisabled = true;
+            } else if (isBroken) {
+              priceNow = getRepairCost(u.id);
+              btnLabel = `🔧 REPAIR · ${fmt(priceNow)} ${u.currency.toUpperCase()}`;
+              btnAction = 'repair';
+              if (u.currency === 'wood' && state.pending < priceNow) btnDisabled = true;
+            } else if (canMaxLvl) {
+              btnLabel = `MAX LVL ${maxLvl}`;
+              btnDisabled = true;
+            } else {
+              const nextPrice = getUpgradePrice(u, lvl + 1);
+              priceNow = nextPrice;
+              btnLabel = `⬆️ LVL ${lvl + 1} · ${fmt(nextPrice)} ${u.currency.toUpperCase()}`;
+              btnAction = 'upgrade';
+              if (u.currency === 'wood' && state.pending < nextPrice) btnDisabled = true;
+            }
+
+            // Color de barra de vida
+            const lifeColor = lifePct > 60 ? 'var(--green-bright)' : (lifePct > 30 ? 'var(--gold-bright)' : 'var(--red-bright)');
+
             return `
-              <div class="item-card ${owned ? 'active' : ''} ${!owned && u.currency === 'wood' && !canBuy ? 'locked' : ''}">
-                ${owned ? '<div class="item-badge-active">ACTIVE</div>' : ''}
+              <div class="item-card ${owned && !isBroken ? 'active' : ''} ${isBroken ? 'locked' : ''}">
+                ${owned && !isBroken ? `<div class="item-badge-active">LVL ${lvl}/${maxLvl}</div>` : ''}
+                ${isBroken ? `<div class="item-badge-active" style="background: var(--red-bright); color: #fff;">BROKEN</div>` : ''}
                 <div class="item-img-wrap">
                   <img src="${ASSETS_BASE}/${u.img}" alt="${u.name}" loading="lazy" />
                 </div>
                 <span class="item-rarity ${u.rarity}">${rarityLabel(u.rarity)}</span>
                 <div class="item-name">${u.name}</div>
                 <div class="item-effect">${u.effect}</div>
-                <button class="item-btn ${u.currency} ${owned ? 'equipped' : ''}" data-buy-up="${u.id}" ${owned || (u.currency === 'wood' && !canBuy) ? 'disabled' : ''}>
-                  ${owned ? '✓ ACTIVE' : (u.price === 0 ? 'FREE' : priceLabel(u))}
+                ${owned && !isPerm ? `
+                  <div style="margin: 0.3rem 0;">
+                    <div style="height: 6px; background: rgba(0,0,0,0.4); border-radius: 999px; overflow: hidden;">
+                      <div style="height: 100%; width: ${lifePct}%; background: ${lifeColor}; transition: width 0.3s;"></div>
+                    </div>
+                    <div style="font-size: 0.6rem; color: var(--mist); text-align: right; margin-top: 0.15rem;">
+                      ${Math.round(lifePct)}% durability
+                    </div>
+                  </div>
+                ` : ''}
+                ${owned && isPerm ? `
+                  <div style="font-size: 0.6rem; color: var(--gold-bright); text-align: right; margin: 0.3rem 0;">
+                    ♾️ Permanent
+                  </div>
+                ` : ''}
+                <button class="item-btn ${u.currency} ${owned && !isBroken && !canMaxLvl ? '' : (canMaxLvl ? 'equipped' : '')}"
+                        data-action="${btnAction}" data-up="${u.id}" ${btnDisabled ? 'disabled' : ''}>
+                  ${btnLabel}
                 </button>
               </div>`;
           }).join('')}
         </div>
       `;
       setTimeout(() => {
-        document.querySelectorAll('[data-buy-up]').forEach(btn => {
+        document.querySelectorAll('[data-up]').forEach(btn => {
           if (btn.disabled) return;
-          btn.onclick = () => buyUpgrade(parseInt(btn.dataset.buyUp));
+          btn.onclick = () => {
+            const id = parseInt(btn.dataset.up);
+            const action = btn.dataset.action;
+            if (action === 'buy') buyUpgrade(id);
+            else if (action === 'upgrade') upgradeLevel(id);
+            else if (action === 'repair') repairUpgrade(id);
+          };
         });
       }, 0);
     }
@@ -1483,80 +1854,143 @@
       }, 0);
     }
     else if (type === 'swap') {
+      // Calcular tiempo restante de cooldown
+      const nowSec = Math.floor(Date.now() / 1000);
+      const cooldownLeft = Math.max(0, state.lastWithdrawAt + CONFIG.WITHDRAW_COOLDOWN_SEC - nowSec);
+      const cooldownMin = Math.ceil(cooldownLeft / 60);
+
+      // Retirado hoy
+      const todayKey = new Date().toISOString().slice(0, 10);
+      const withdrawnToday = state.dailyWithdraw?.[todayKey] || 0;
+      const remainingToday = Math.max(0, CONFIG.WITHDRAW_MAX_DAILY - withdrawnToday);
+
       body.innerHTML = `
         <p style="color: var(--mist); font-size: 0.78rem; margin-bottom: 1rem; line-height: 1.5;">
-          Convert your tokens. <b>Rate: 1 BRZL = 1,000 WOOD</b>
+          Rate: <b>1 BRZL = 1,000 WOOD</b> · Withdraw: <b>5,000 BRZL/day · 6h cooldown · 1% fee</b>
         </p>
 
         <!-- BRZL → WOOD -->
-        <div style="background: rgba(0,0,0,0.3); border: 1px solid rgba(212, 160, 76, 0.3); border-radius: 14px; padding: 1rem; margin-bottom: 1rem;">
+        <div style="background: rgba(0,0,0,0.4); border: 1px solid rgba(22, 163, 74, 0.4); border-radius: 14px; padding: 1rem; margin-bottom: 1rem;">
           <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.7rem;">
-            <span style="font-family: 'Cinzel', serif; font-weight: 700; color: var(--gold-bright); font-size: 1rem;">🪵 Buy WOOD</span>
-            <span style="font-size: 0.65rem; color: var(--success);">NO LIMIT</span>
+            <span style="font-family: 'Cinzel', serif; font-weight: 900; color: var(--green-bright); font-size: 1rem;">🪵 BUY WOOD</span>
+            <span style="font-size: 0.6rem; color: var(--success); font-weight: 800;">NO LIMIT 🚀</span>
           </div>
           <div style="margin-bottom: 0.5rem;">
-            <div style="font-size: 0.65rem; color: var(--mist); margin-bottom: 0.3rem;">Pay with BRZL</div>
+            <div style="font-size: 0.65rem; color: var(--mist); margin-bottom: 0.3rem;">Pay BRZL</div>
             <input type="number" id="swap-brzl-input" placeholder="0" min="1" step="1"
-              style="width: 100%; padding: 0.7rem; background: rgba(0,0,0,0.4); border: 1px solid rgba(212,160,76,0.3); border-radius: 10px; color: var(--cream); font-size: 1rem; font-family: 'Inter'; outline: none;" />
+              style="width: 100%; padding: 0.7rem; background: rgba(0,0,0,0.5); border: 1px solid rgba(22,163,74,0.4); border-radius: 10px; color: var(--cream); font-size: 1rem; outline: none;" />
           </div>
-          <div style="text-align: center; margin: 0.4rem 0; color: var(--gold);">⬇</div>
+          <div style="text-align: center; margin: 0.4rem 0; color: var(--green-bright);">⬇</div>
           <div style="margin-bottom: 0.8rem;">
-            <div style="font-size: 0.65rem; color: var(--mist); margin-bottom: 0.3rem;">You will receive</div>
-            <div id="swap-wood-output" style="padding: 0.7rem; background: rgba(106, 176, 76, 0.1); border: 1px solid rgba(106, 176, 76, 0.3); border-radius: 10px; font-family: 'Cinzel', serif; font-size: 1.1rem; color: var(--gold-bright);">0 WOOD</div>
+            <div style="font-size: 0.65rem; color: var(--mist); margin-bottom: 0.3rem;">Receive</div>
+            <div id="swap-wood-output" style="padding: 0.7rem; background: rgba(22, 163, 74, 0.15); border: 1px solid rgba(22, 163, 74, 0.4); border-radius: 10px; font-family: 'Cinzel', serif; font-size: 1.1rem; color: var(--green-bright); font-weight: 800;">0 WOOD</div>
           </div>
-          <button class="btn-primary" id="btn-swap-brzl-wood">⚡ Buy WOOD</button>
+          <button class="btn-primary" id="btn-swap-brzl-wood" style="background: linear-gradient(135deg, var(--green-bright), var(--green));">⚡ BUY WOOD</button>
         </div>
 
-        <!-- WOOD → BRZL -->
-        <div style="background: rgba(0,0,0,0.3); border: 1px solid rgba(212, 160, 76, 0.3); border-radius: 14px; padding: 1rem;">
+        <!-- WOOD → BRZL INTERNAL (no on-chain) -->
+        <div style="background: rgba(0,0,0,0.4); border: 1px solid rgba(251, 191, 36, 0.4); border-radius: 14px; padding: 1rem; margin-bottom: 1rem;">
           <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.7rem;">
-            <span style="font-family: 'Cinzel', serif; font-weight: 700; color: var(--gold-bright); font-size: 1rem;">💰 Cash out to BRZL</span>
-            <span style="font-size: 0.65rem; color: var(--danger);">WITH LIMITS</span>
+            <span style="font-family: 'Cinzel', serif; font-weight: 900; color: var(--gold-bright); font-size: 1rem;">💰 CONVERT TO BRZL</span>
+            <span style="font-size: 0.6rem; color: var(--gold-bright); font-weight: 800;">NO LIMIT · IN-GAME 📦</span>
           </div>
           <div style="font-size: 0.65rem; color: var(--mist); margin-bottom: 0.5rem; line-height: 1.4;">
-            Your tier: <b style="color: var(--gold-bright);">${state.tier === 0 ? 'FREE (50 BRZL/day)' : CONFIG.TIERS[state.tier - 1].name}</b><br>
-            Available: <b>${fmt(state.pending)} WOOD</b> (= ${fmt(Math.floor(state.pending / 1000))} BRZL)
+            WOOD: <b style="color: var(--green-bright);">${fmt(state.pending)}</b> = <b style="color: var(--gold-bright);">${fmt(Math.floor(state.pending / 1000))} BRZL</b><br>
+            In-game balance: <b style="color: var(--gold-bright);">${fmt(state.internalBrzl)} BRZL</b>
           </div>
           <div style="margin-bottom: 0.5rem;">
-            <div style="font-size: 0.65rem; color: var(--mist); margin-bottom: 0.3rem;">I want to receive (BRZL)</div>
-            <input type="number" id="swap-brzl-output-input" placeholder="0" min="1" step="1"
-              style="width: 100%; padding: 0.7rem; background: rgba(0,0,0,0.4); border: 1px solid rgba(212,160,76,0.3); border-radius: 10px; color: var(--cream); font-size: 1rem; outline: none;" />
+            <div style="font-size: 0.65rem; color: var(--mist); margin-bottom: 0.3rem;">Convert BRZL (in-game)</div>
+            <input type="number" id="swap-internal-input" placeholder="0" min="1" step="1"
+              style="width: 100%; padding: 0.7rem; background: rgba(0,0,0,0.5); border: 1px solid rgba(251,191,36,0.4); border-radius: 10px; color: var(--cream); font-size: 1rem; outline: none;" />
           </div>
-          <div style="text-align: center; margin: 0.4rem 0; color: var(--gold);">⬆</div>
+          <div style="text-align: center; margin: 0.4rem 0; color: var(--gold-bright);">⬆</div>
           <div style="margin-bottom: 0.8rem;">
-            <div style="font-size: 0.65rem; color: var(--mist); margin-bottom: 0.3rem;">Cost in WOOD</div>
-            <div id="swap-wood-cost" style="padding: 0.7rem; background: rgba(212, 160, 76, 0.1); border: 1px solid rgba(212, 160, 76, 0.3); border-radius: 10px; font-family: 'Cinzel', serif; font-size: 1.1rem; color: var(--gold-bright);">0 WOOD</div>
+            <div style="font-size: 0.65rem; color: var(--mist); margin-bottom: 0.3rem;">Cost</div>
+            <div id="swap-internal-cost" style="padding: 0.7rem; background: rgba(251, 191, 36, 0.15); border: 1px solid rgba(251, 191, 36, 0.4); border-radius: 10px; font-family: 'Cinzel', serif; font-size: 1.1rem; color: var(--gold-bright); font-weight: 800;">0 WOOD</div>
           </div>
-          <button class="btn-primary" id="btn-swap-wood-brzl">💎 Cash out BRZL</button>
-          <p style="color: var(--mist); font-size: 0.65rem; margin-top: 0.7rem; text-align: center; line-height: 1.4;">
-            ⏱ 6h cooldown between claims · 🔒 24h lock · 🛡 World ID required
-          </p>
+          <button class="btn-primary" id="btn-convert-internal" style="background: linear-gradient(135deg, var(--gold-bright), var(--brown-light));">💎 CONVERT TO IN-GAME BRZL</button>
+        </div>
+
+        <!-- WITHDRAW (internal → on-chain) -->
+        <div style="background: rgba(0,0,0,0.5); border: 2px solid rgba(220, 38, 38, 0.5); border-radius: 14px; padding: 1rem;">
+          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.7rem;">
+            <span style="font-family: 'Cinzel', serif; font-weight: 900; color: var(--red-bright); font-size: 1rem;">🏦 WITHDRAW TO WALLET</span>
+            <span style="font-size: 0.6rem; color: var(--danger); font-weight: 800;">ON-CHAIN ⛓</span>
+          </div>
+          <div style="font-size: 0.65rem; color: var(--mist); margin-bottom: 0.6rem; line-height: 1.5; padding: 0.5rem; background: rgba(0,0,0,0.4); border-radius: 8px;">
+            🔓 In-game balance: <b style="color: var(--gold-bright);">${fmt(state.internalBrzl)} BRZL</b><br>
+            📅 Withdrawn today: <b>${fmt(withdrawnToday)} / 5,000 BRZL</b><br>
+            🎯 Remaining today: <b style="color: var(--green-bright);">${fmt(remainingToday)} BRZL</b><br>
+            ${cooldownLeft > 0 ? `⏱ Next withdraw: <b style="color: var(--red-bright);">${cooldownMin} min</b>` : '✅ Withdraw available now'}<br>
+            💸 Fee: <b>1%</b> (goes to treasury)
+          </div>
+          <div style="margin-bottom: 0.5rem;">
+            <div style="font-size: 0.65rem; color: var(--mist); margin-bottom: 0.3rem;">Withdraw BRZL</div>
+            <input type="number" id="withdraw-input" placeholder="0" min="1" max="${remainingToday}" step="1"
+              ${cooldownLeft > 0 || remainingToday <= 0 ? 'disabled' : ''}
+              style="width: 100%; padding: 0.7rem; background: rgba(0,0,0,0.5); border: 1px solid rgba(220,38,38,0.4); border-radius: 10px; color: var(--cream); font-size: 1rem; outline: none;" />
+          </div>
+          <div style="margin-bottom: 0.8rem;">
+            <div style="font-size: 0.65rem; color: var(--mist); margin-bottom: 0.3rem;">You receive (after 1% fee)</div>
+            <div id="withdraw-net" style="padding: 0.7rem; background: rgba(220, 38, 38, 0.15); border: 1px solid rgba(220, 38, 38, 0.4); border-radius: 10px; font-family: 'Cinzel', serif; font-size: 1.1rem; color: var(--gold-bright); font-weight: 800;">0 BRZL</div>
+          </div>
+          <button class="btn-primary" id="btn-withdraw" ${cooldownLeft > 0 || remainingToday <= 0 ? 'disabled' : ''}>
+            ${cooldownLeft > 0 ? `⏱ COOLDOWN ${cooldownMin}min` : (remainingToday <= 0 ? '✅ LIMIT REACHED TODAY' : '🚀 WITHDRAW TO WALLET')}
+          </button>
         </div>
       `;
       setTimeout(() => {
-        // Auto-calcular WOOD a recibir
+        // BRZL → WOOD
         const brzlIn = $('swap-brzl-input');
         const woodOut = $('swap-wood-output');
-        brzlIn.oninput = () => {
-          const v = parseInt(brzlIn.value) || 0;
-          woodOut.textContent = fmt(v * CONFIG.SWAP_RATIO) + ' WOOD';
-        };
-        $('btn-swap-brzl-wood').onclick = () => {
-          const amount = parseInt(brzlIn.value) || 0;
-          if (amount > 0) swapBrzlToWood(amount);
-        };
+        if (brzlIn) {
+          brzlIn.oninput = () => {
+            const v = parseInt(brzlIn.value) || 0;
+            woodOut.textContent = fmt(v * CONFIG.SWAP_RATIO) + ' WOOD';
+          };
+        }
+        const btnSwapBW = $('btn-swap-brzl-wood');
+        if (btnSwapBW) {
+          btnSwapBW.onclick = () => {
+            const amount = parseInt(brzlIn.value) || 0;
+            if (amount > 0) swapBrzlToWood(amount);
+          };
+        }
 
-        // Auto-calcular WOOD a gastar
-        const brzlOutIn = $('swap-brzl-output-input');
-        const woodCost = $('swap-wood-cost');
-        brzlOutIn.oninput = () => {
-          const v = parseInt(brzlOutIn.value) || 0;
-          woodCost.textContent = fmt(v * CONFIG.SWAP_RATIO) + ' WOOD';
-        };
-        $('btn-swap-wood-brzl').onclick = () => {
-          const amount = parseInt(brzlOutIn.value) || 0;
-          if (amount > 0) claimWoodToBrzl(amount);
-        };
+        // WOOD → BRZL internal
+        const intIn = $('swap-internal-input');
+        const intCost = $('swap-internal-cost');
+        if (intIn) {
+          intIn.oninput = () => {
+            const v = parseInt(intIn.value) || 0;
+            intCost.textContent = fmt(v * CONFIG.SWAP_RATIO) + ' WOOD';
+          };
+        }
+        const btnConvert = $('btn-convert-internal');
+        if (btnConvert) {
+          btnConvert.onclick = () => {
+            const amount = parseInt(intIn.value) || 0;
+            if (amount > 0) convertToInternal(amount);
+          };
+        }
+
+        // WITHDRAW
+        const wIn = $('withdraw-input');
+        const wNet = $('withdraw-net');
+        if (wIn) {
+          wIn.oninput = () => {
+            const v = parseInt(wIn.value) || 0;
+            const fee = Math.ceil(v * CONFIG.WITHDRAW_FEE_PCT / 100);
+            wNet.textContent = fmt(v - fee) + ' BRZL (fee: ' + fee + ')';
+          };
+        }
+        const btnW = $('btn-withdraw');
+        if (btnW) {
+          btnW.onclick = () => {
+            const amount = parseInt(wIn.value) || 0;
+            if (amount > 0) withdrawToWallet(amount);
+          };
+        }
       }, 0);
     }
     else if (type === 'stats') {
@@ -1567,16 +2001,16 @@
           <div style="font-family: monospace; font-size: 0.78rem; word-break: break-all; color: var(--cream);">${state.address || '—'}</div>
         </div>
         <div class="modal-section">
+          <div class="modal-label">In-game BRZL balance</div>
+          <div class="modal-value" style="color: var(--gold-bright);">${fmt(state.internalBrzl)} BRZL</div>
+        </div>
+        <div class="modal-section">
           <div class="modal-label">Current forest</div>
           <div class="modal-value">${getCurrentForest().name}</div>
         </div>
         <div class="modal-section">
           <div class="modal-label">Equipped tree</div>
           <div class="modal-value">${tree ? tree.name : '—'} (+${getWoodPerTap()} WOOD/tap)</div>
-        </div>
-        <div class="modal-section">
-          <div class="modal-label">Membership</div>
-          <div class="modal-value">${state.tier === 0 ? 'None' : CONFIG.TIERS[state.tier - 1].name}</div>
         </div>
         <div class="modal-section">
           <div class="modal-label">Trees unlocked</div>
