@@ -1169,7 +1169,7 @@
   function updateWalletUI() {
     if (state.address) {
       const short = state.address.slice(0, 6) + '...' + state.address.slice(-4);
-      $('wallet-mini').textContent = state.username ? `@${state.username}` : short;
+      $('wallet-mini').textContent = short;
     }
   }
 
@@ -2261,18 +2261,6 @@
       const payload = result?.finalPayload || result?.data || result;
       state.address = payload.address || mk.walletAddress;
       if (!state.address) throw new Error('No address');
-
-      // Capturar username de World App (si existe)
-      try {
-        if (mk.user?.username) {
-          state.username = mk.user.username;
-        } else if (mk.getUserInfo) {
-          const userInfo = await mk.getUserInfo();
-          if (userInfo?.username) state.username = userInfo.username;
-        }
-      } catch (e) {
-        console.log('No username available');
-      }
 
       showToast('✓ Connected', 'success');
       await loadUser(state.address);
