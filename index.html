@@ -666,7 +666,7 @@
         <span class="nav-label">Rank</span>
       </button>
     </nav>
-    <div class="version-tag">v6.4 · ref-in-rank</div>
+    <div class="version-tag">v6.5 · safe</div>
   </div>
 
   <div class="modal-backdrop" id="modal-backdrop">
@@ -984,9 +984,27 @@
     try {
       const { db, doc, getDoc, setDoc, serverTimestamp } = window._fb;
       const ref = doc(db, 'users', address.toLowerCase());
-      const snap = await getDoc(ref);
+
+      // CRITICAL: si getDoc falla, NO debemos asumir que el user no existe
+      // Para evitar sobrescritura accidental con bono de bienvenida
+      let snap;
+      try {
+        snap = await getDoc(ref);
+      } catch (e) {
+        console.error('getDoc failed:', e);
+        showToast('Connection error. Try again in 30s', 'error');
+        return; // NO continuar - evita sobrescribir
+      }
+
       if (snap.exists()) {
         const d = snap.data();
+        // Doble verificación: si tiene createdAt, es un user real (no sobrescribir nunca)
+        const isExistingUser = !!(d.createdAt || d.address);
+
+        if (!isExistingUser) {
+          console.warn('User exists but no createdAt — possible corruption');
+        }
+
         state.energy = d.energy ?? getEnergyMax();
         state.forestId = d.forestId ?? 1;
         state.activeTree = d.activeTree ?? 1;
@@ -1045,8 +1063,22 @@
         const regen = Math.floor(elapsed / getEnergyRegenMs());
         state.energy = Math.min(getEnergyMax(), state.energy + regen);
       } else {
+        // PROTECCIÓN ANTI-CORRUPCIÓN: verificar 2da vez antes de crear
+        try {
+          const recheckSnap = await getDoc(ref);
+          if (recheckSnap.exists()) {
+            // Hubo race condition - el doc YA existe, recargar
+            console.warn('Race condition detected - reloading user');
+            return loadUser(address);
+          }
+        } catch (e) {
+          showToast('Connection error', 'error');
+          return;
+        }
+
         const currentWeek = getWeekKey();
         const newReferralCode = generateReferralCode();
+        // setDoc con merge: true → si por alguna razón el doc existe, NO destruye
         await setDoc(ref, {
           address: address.toLowerCase(),
           username: state.username || '',
@@ -1066,24 +1098,26 @@
           referralPaid: false,
           referralsCount: 0,
           createdAt: serverTimestamp()
-        });
+        }, { merge: true });
         state.pending = 1000;
         state.totalFarmed = 1000;
         state.weeklyWood = 1000;
         state.weekKey = currentWeek;
         state.referralCode = newReferralCode;
         setTimeout(() => showToast('🎁 Welcome bonus: 1000 WOOD = 1 BRZL!', 'success'), 800);
-        // Mostrar prompt de código de referido después de cargar todo
         setTimeout(() => {
           try { askReferralCode(); } catch(e) { console.warn('askReferral failed:', e); }
         }, 3000);
       }
     } catch (e) { console.error('loadUser:', e); }
+    userLoaded = true;  // Solo después de loadUser exitoso, permitir save
   }
 
   let saveTimeout = null;
+  let userLoaded = false;  // Flag: true cuando loadUser completó
   function scheduleSave() {
     if (saveTimeout || !window._dbReady) return;
+    if (!userLoaded) return; // CRÍTICO: no guardar antes de cargar
     saveTimeout = setTimeout(async () => {
       saveTimeout = null;
       if (!state.address || !window._fb) return;
@@ -2512,22 +2546,46 @@
       showToast('Connecting wallet...', '');
       const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
       const nonce = Array.from({length: 16}, () => chars[Math.floor(Math.random() * chars.length)]).join('');
-      const result = await mk.walletAuth({ nonce, statement: 'Welcome to Wood Farm 🌲' });
-      const payload = result?.finalPayload || result?.data || result;
-      state.address = payload.address || mk.walletAddress;
-      if (!state.address) throw new Error('No address');
+
+      let result;
+      try {
+        result = await mk.walletAuth({ nonce, statement: 'Welcome to Wood Farm 🌲' });
+      } catch (authErr) {
+        console.error('walletAuth failed:', authErr);
+        showToast('Wallet auth failed: ' + (authErr?.message || 'unknown').slice(0, 40), 'error');
+        return;
+      }
+
+      // Buscar address en múltiples lugares posibles del payload
+      const payload = result?.finalPayload || result?.data || result || {};
+      state.address = payload?.address || mk.walletAddress || mk.user?.walletAddress;
+
+      if (!state.address) {
+        console.error('No address found in:', result);
+        showToast('Could not get wallet address. Try again.', 'error');
+        return;
+      }
 
       showToast('✓ Connected', 'success');
-      await loadUser(state.address);
-      updateWalletUI();
-      updateForestUI();
-      updateTreeImage();
-      updateGameUI();
+
+      try {
+        await loadUser(state.address);
+      } catch (loadErr) {
+        console.error('loadUser failed:', loadErr);
+        showToast('Could not load your data. Try again.', 'error');
+        return;
+      }
+
+      try { updateWalletUI(); } catch(e) {}
+      try { updateForestUI(); } catch(e) {}
+      try { updateTreeImage(); } catch(e) {}
+      try { updateGameUI(); } catch(e) {}
       switchToGame();
-      loadBalances(); // cargar balances de tokens
+      try { loadBalances(); } catch(e) {}
     } catch (e) {
       console.error('connect error:', e);
-      showToast('Connection error: ' + (e.message || '').slice(0, 30), 'error');
+      const msg = e?.message || (typeof e === 'string' ? e : 'unknown error');
+      showToast('Connection error: ' + String(msg).slice(0, 40), 'error');
     }
   }
   function switchToGame() {
