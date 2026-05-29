@@ -666,7 +666,7 @@
         <span class="nav-label">Rank</span>
       </button>
     </nav>
-    <div class="version-tag">v6.6 · fixed</div>
+    <div class="version-tag">v7.0 · stable</div>
   </div>
 
   <div class="modal-backdrop" id="modal-backdrop">
@@ -978,151 +978,187 @@
     return getEffectSum('idleRate');
   }
 
-  // ============ FIREBASE ============
+  // ============ FIREBASE v7 - BULLETPROOF ============
+  let userLoaded = false;
   async function loadUser(address) {
-    if (!window._dbReady || !window._fb) return;
+    if (!window._dbReady || !window._fb) {
+      showToast('Firebase not ready', 'error');
+      return;
+    }
+    
+    userLoaded = false; // bloquear saves
     try {
       const { db, doc, getDoc, setDoc, serverTimestamp } = window._fb;
       const ref = doc(db, 'users', address.toLowerCase());
-
-      // CRITICAL: si getDoc falla, NO debemos asumir que el user no existe
-      // Para evitar sobrescritura accidental con bono de bienvenida
+      
       let snap;
       try {
         snap = await getDoc(ref);
       } catch (e) {
         console.error('getDoc failed:', e);
-        showToast('Connection error. Try again in 30s', 'error');
-        return; // NO continuar - evita sobrescribir
+        showToast('Could not load user data', 'error');
+        return;
       }
 
       if (snap.exists()) {
+        // USER EXISTE - CARGAR SIN MODIFICAR
         const d = snap.data();
         
-        // CRÍTICO: cargar TODO sin modificar nada todavía
-        state.energy = d.energy ?? getEnergyMax();
+        // Cargar TODO
+        state.address = address.toLowerCase();
+        state.energy = Math.min(d.energy ?? 0, getEnergyMax());
         state.forestId = d.forestId ?? 1;
         state.activeTree = d.activeTree ?? 1;
-        state.ownedTrees = d.ownedTrees ?? [1];
-        state.ownedUpgrades = d.ownedUpgrades ?? [];
-        state.upgradeData = d.upgradeData ?? {};
-        state.pending = d.pending ?? 0;
-        state.totalFarmed = d.totalFarmed ?? 0;
-        state.tier = d.tier ?? 0;
-        state.internalBrzl = d.internalBrzl ?? 0;
-        state.lastEnergyTs = d.lastEnergyTs ?? Date.now();
-        state.lastWithdrawAt = d.lastWithdrawAt ?? 0;
-        state.dailyWithdraw = d.dailyWithdraw ?? {};
-        state.username = d.username ?? '';
-        state.weeklyWood = d.weeklyWood ?? 0;
-        state.weeklyBrzl = d.weeklyBrzl ?? 0;
-        state.weekKey = d.weekKey ?? '';
-        state.referralCode = d.referralCode ?? generateReferralCode();
-        state.referredBy = d.referredBy ?? '';
-        state.referralPaid = d.referralPaid ?? false;
-        state.referralsCount = d.referralsCount ?? 0;
+        state.ownedTrees = Array.isArray(d.ownedTrees) ? d.ownedTrees : [1];
+        state.ownedUpgrades = Array.isArray(d.ownedUpgrades) ? d.ownedUpgrades : [];
+        state.upgradeData = (d.upgradeData && typeof d.upgradeData === 'object') ? d.upgradeData : {};
+        state.pending = Number(d.pending) || 0;
+        state.totalFarmed = Number(d.totalFarmed) || 0;
+        state.internalBrzl = Number(d.internalBrzl) || 0;
+        state.lastEnergyTs = Number(d.lastEnergyTs) || Date.now();
+        state.lastWithdrawAt = Number(d.lastWithdrawAt) || 0;
+        state.dailyWithdraw = (d.dailyWithdraw && typeof d.dailyWithdraw === 'object') ? d.dailyWithdraw : {};
+        state.username = String(d.username || '');
+        state.weeklyWood = Number(d.weeklyWood) || 0;
+        state.weeklyBrzl = Number(d.weeklyBrzl) || 0;
+        state.weekKey = String(d.weekKey || getWeekKey());
+        state.referralCode = String(d.referralCode || generateReferralCode());
+        state.referredBy = String(d.referredBy || '');
+        state.referralPaid = !!d.referralPaid;
+        state.referralsCount = Number(d.referralsCount) || 0;
+        state.tier = Number(d.tier) || 0;
 
-        // Migrar mejoras viejas (SIN tocar upgradeData si ya existe)
-        state.ownedUpgrades.forEach(id => {
-          if (!state.upgradeData[id]) {
-            state.upgradeData[id] = { level: 1, purchasedAt: Math.floor(Date.now() / 1000) };
+        // Regen energía
+        const elapsed = Date.now() - state.lastEnergyTs;
+        const regenMs = getEnergyRegenMs();
+        const regenCount = Math.floor(elapsed / regenMs);
+        if (regenCount > 0) {
+          state.energy = Math.min(state.energy + regenCount, getEnergyMax());
+          state.lastEnergyTs = Date.now();
+        }
+
+        // Idle WOOD (máximo 8h)
+        const idleRate = getIdleRate();
+        if (idleRate > 0) {
+          const idleMs = Math.min(elapsed, 8 * 3600 * 1000);
+          const woodEarned = Math.floor((idleMs / 1000) * idleRate);
+          if (woodEarned > 0) {
+            state.pending += woodEarned;
+            state.totalFarmed += woodEarned;
+            state.weeklyWood += woodEarned;
+            console.log(`Idle: +${woodEarned} WOOD`);
           }
-        });
+        }
 
-        // Reset semanal si cambió la semana
+        // Reset semanal
         const currentWeek = getWeekKey();
         if (state.weekKey !== currentWeek) {
           state.weeklyWood = 0;
           state.weeklyBrzl = 0;
           state.weekKey = currentWeek;
-        }
-        
-        // Calcular WOOD idle ganado mientras estuvo afuera
-        const idleRate = getIdleRate();
-        if (idleRate > 0) {
-          const elapsedSec = Math.floor((Date.now() - state.lastEnergyTs) / 1000);
-          const idleWood = Math.min(idleRate * elapsedSec, idleRate * 3600 * 8);
-          if (idleWood > 0) {
-            state.pending += idleWood;
-            state.totalFarmed += idleWood;
-            state.weeklyWood += idleWood;
-            showToast(`💤 You earned ${fmt(idleWood)} WOOD while away`, 'success');
-          }
-        }
-        
-        // Regenerar energía
-        const elapsed = Date.now() - state.lastEnergyTs;
-        const regen = Math.floor(elapsed / getEnergyRegenMs());
-        state.energy = Math.min(getEnergyMax(), state.energy + regen);
-      } else {
-        // PROTECCIÓN ANTI-CORRUPCIÓN: verificar 2da vez antes de crear
-        try {
-          const recheckSnap = await getDoc(ref);
-          if (recheckSnap.exists()) {
-            // Hubo race condition - el doc YA existe, recargar
-            console.warn('Race condition detected - reloading user');
-            return loadUser(address);
-          }
-        } catch (e) {
-          showToast('Connection error', 'error');
-          return;
+          console.log('Weekly reset');
         }
 
+      } else {
+        // USER NUEVO - CREAR CON VALORES INICIALES
+        console.log('Creating new user');
         const currentWeek = getWeekKey();
-        const newReferralCode = generateReferralCode();
-        // setDoc con merge: true → si por alguna razón el doc existe, NO destruye
-        await setDoc(ref, {
-          address: address.toLowerCase(),
-          username: state.username || '',
-          energy: 100, forestId: 1,
-          activeTree: 1, ownedTrees: [1], ownedUpgrades: [],
-          upgradeData: {},
-          pending: 1000, totalFarmed: 1000, tier: 0,
-          internalBrzl: 0,
-          lastEnergyTs: Date.now(),
-          lastWithdrawAt: 0,
-          dailyWithdraw: {},
-          weeklyWood: 1000,
-          weeklyBrzl: 0,
-          weekKey: currentWeek,
-          referralCode: newReferralCode,
-          referredBy: '',
-          referralPaid: false,
-          referralsCount: 0,
-          createdAt: serverTimestamp()
-        }, { merge: true });
+        const newCode = generateReferralCode();
+
+        state.address = address.toLowerCase();
+        state.energy = 100;
+        state.forestId = 1;
+        state.activeTree = 1;
+        state.ownedTrees = [1];
+        state.ownedUpgrades = [];
+        state.upgradeData = {};
         state.pending = 1000;
         state.totalFarmed = 1000;
+        state.internalBrzl = 0;
+        state.lastEnergyTs = Date.now();
+        state.lastWithdrawAt = 0;
+        state.dailyWithdraw = {};
+        state.username = '';
         state.weeklyWood = 1000;
+        state.weeklyBrzl = 0;
         state.weekKey = currentWeek;
-        state.referralCode = newReferralCode;
-        setTimeout(() => showToast('🎁 Welcome bonus: 1000 WOOD = 1 BRZL!', 'success'), 800);
-        setTimeout(() => {
-          try { askReferralCode(); } catch(e) { console.warn('askReferral failed:', e); }
-        }, 3000);
+        state.referralCode = newCode;
+        state.referredBy = '';
+        state.referralPaid = false;
+        state.referralsCount = 0;
+        state.tier = 0;
+
+        // Guardar INMEDIATAMENTE
+        try {
+          await setDoc(ref, {
+            address: state.address,
+            energy: state.energy,
+            forestId: state.forestId,
+            activeTree: state.activeTree,
+            ownedTrees: state.ownedTrees,
+            ownedUpgrades: state.ownedUpgrades,
+            upgradeData: state.upgradeData,
+            pending: state.pending,
+            totalFarmed: state.totalFarmed,
+            internalBrzl: state.internalBrzl,
+            lastEnergyTs: state.lastEnergyTs,
+            lastWithdrawAt: state.lastWithdrawAt,
+            dailyWithdraw: state.dailyWithdraw,
+            username: state.username,
+            weeklyWood: state.weeklyWood,
+            weeklyBrzl: state.weeklyBrzl,
+            weekKey: state.weekKey,
+            referralCode: state.referralCode,
+            referredBy: state.referredBy,
+            referralPaid: state.referralPaid,
+            referralsCount: state.referralsCount,
+            tier: state.tier,
+            createdAt: serverTimestamp()
+          });
+          showToast('🎁 Welcome! +1000 WOOD bonus', 'success');
+        } catch (e) {
+          console.error('setDoc new user failed:', e);
+          showToast('Could not create account', 'error');
+          return;
+        }
       }
-    } catch (e) { console.error('loadUser:', e); }
-    userLoaded = true;  // Solo después de loadUser exitoso, permitir save
+
+      userLoaded = true; // PERMITIR SAVES
+      console.log('✓ User loaded');
+
+    } catch (e) {
+      console.error('loadUser error:', e);
+      showToast('Error loading user', 'error');
+    }
   }
 
   let saveTimeout = null;
-  let userLoaded = false;  // Flag: true cuando loadUser completó
   function scheduleSave() {
-    if (saveTimeout || !window._dbReady) return;
-    if (!userLoaded) return; // CRÍTICO: no guardar antes de cargar
+    if (saveTimeout) return;
+    if (!userLoaded) {
+      console.warn('Save blocked: user not loaded yet');
+      return;
+    }
+    if (!state.address || !window._fb) return;
+
     saveTimeout = setTimeout(async () => {
       saveTimeout = null;
-      if (!state.address || !window._fb) return;
+      if (!userLoaded || !state.address) return; // Doble check
+
       try {
         const { db, doc, updateDoc, serverTimestamp } = window._fb;
-        const ref = doc(db, 'users', state.address.toLowerCase());
-        await updateDoc(ref, {
-          energy: state.energy, forestId: state.forestId,
-          activeTree: state.activeTree, ownedTrees: state.ownedTrees,
+        const ref = doc(db, 'users', state.address);
+        
+        // CRÍTICO: NO incluir campos que NO existen o NO debería modificar
+        const updateData = {
+          energy: state.energy,
+          forestId: state.forestId,
+          activeTree: state.activeTree,
+          ownedTrees: state.ownedTrees,
           ownedUpgrades: state.ownedUpgrades,
           upgradeData: state.upgradeData,
-          pending: state.pending, totalFarmed: state.totalFarmed,
-          tier: state.tier,
+          pending: state.pending,
+          totalFarmed: state.totalFarmed,
           internalBrzl: state.internalBrzl,
           lastEnergyTs: state.lastEnergyTs,
           lastWithdrawAt: state.lastWithdrawAt,
@@ -1136,9 +1172,15 @@
           referralPaid: state.referralPaid,
           referralsCount: state.referralsCount,
           updatedAt: serverTimestamp()
-        });
-      } catch (e) { console.error('save:', e); }
+        };
+
+        await updateDoc(ref, updateData);
+        console.log('✓ Saved');
+      } catch (e) {
+        console.error('save error:', e);
+      }
     }, 2000);
+  }
   }
 
   // ============ GAME LOGIC ============
