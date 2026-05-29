@@ -666,7 +666,7 @@
         <span class="nav-label">Rank</span>
       </button>
     </nav>
-    <div class="version-tag">v6.5 · safe</div>
+    <div class="version-tag">v6.6 · fixed</div>
   </div>
 
   <div class="modal-backdrop" id="modal-backdrop">
@@ -998,13 +998,8 @@
 
       if (snap.exists()) {
         const d = snap.data();
-        // Doble verificación: si tiene createdAt, es un user real (no sobrescribir nunca)
-        const isExistingUser = !!(d.createdAt || d.address);
-
-        if (!isExistingUser) {
-          console.warn('User exists but no createdAt — possible corruption');
-        }
-
+        
+        // CRÍTICO: cargar TODO sin modificar nada todavía
         state.energy = d.energy ?? getEnergyMax();
         state.forestId = d.forestId ?? 1;
         state.activeTree = d.activeTree ?? 1;
@@ -1022,17 +1017,12 @@
         state.weeklyWood = d.weeklyWood ?? 0;
         state.weeklyBrzl = d.weeklyBrzl ?? 0;
         state.weekKey = d.weekKey ?? '';
-        state.referralCode = d.referralCode ?? '';
+        state.referralCode = d.referralCode ?? generateReferralCode();
         state.referredBy = d.referredBy ?? '';
         state.referralPaid = d.referralPaid ?? false;
         state.referralsCount = d.referralsCount ?? 0;
 
-        // Generar código si no tiene (para users viejos)
-        if (!state.referralCode) {
-          state.referralCode = generateReferralCode();
-        }
-
-        // Migrar mejoras viejas
+        // Migrar mejoras viejas (SIN tocar upgradeData si ya existe)
         state.ownedUpgrades.forEach(id => {
           if (!state.upgradeData[id]) {
             state.upgradeData[id] = { level: 1, purchasedAt: Math.floor(Date.now() / 1000) };
@@ -1046,11 +1036,12 @@
           state.weeklyBrzl = 0;
           state.weekKey = currentWeek;
         }
+        
         // Calcular WOOD idle ganado mientras estuvo afuera
         const idleRate = getIdleRate();
         if (idleRate > 0) {
           const elapsedSec = Math.floor((Date.now() - state.lastEnergyTs) / 1000);
-          const idleWood = Math.min(idleRate * elapsedSec, idleRate * 3600 * 8); // cap 8h
+          const idleWood = Math.min(idleRate * elapsedSec, idleRate * 3600 * 8);
           if (idleWood > 0) {
             state.pending += idleWood;
             state.totalFarmed += idleWood;
@@ -1058,6 +1049,7 @@
             showToast(`💤 You earned ${fmt(idleWood)} WOOD while away`, 'success');
           }
         }
+        
         // Regenerar energía
         const elapsed = Date.now() - state.lastEnergyTs;
         const regen = Math.floor(elapsed / getEnergyRegenMs());
